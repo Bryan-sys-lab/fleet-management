@@ -66,6 +66,8 @@ jobs:
 
       # Defence-in-depth: no-reuse build number guard
       - name: Build number reuse guard
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           TAG_BODY="${TAG#v}"
           SEMVER="${TAG_BODY%%+*}"
@@ -158,6 +160,8 @@ jobs:
           echo "EOF" >> $GITHUB_OUTPUT
 
       - name: Create or update GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           RELEASE_NOTES="Release ${{ github.ref_name }}\n\n## Changes since last release\n$(git log --oneline --pretty=format:'- %s' $(git describe --tags --abbrev=0)..HEAD 2>/dev/null || echo 'No previous tag found.')"
           gh release view "$TAG" 2>/dev/null && \
@@ -167,6 +171,8 @@ jobs:
 
       - name: Publish release (finalize draft -> published)
         if: ${{ success() }}
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           gh release edit "$TAG" --draft=false
           echo "Release $TAG is now published."
