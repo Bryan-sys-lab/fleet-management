@@ -16,6 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       TAG: ${{ github.ref_name }}
+      NDK_VERSION: 27.1.12297006
     steps:
       - uses: actions/checkout@v4
         with:
@@ -161,15 +162,17 @@ jobs:
           java-version: '17'
 
       - name: Set up Android SDK + NDK (skips download if cached)
-        run: |
-          yes | sdkmanager --licenses > /dev/null 2>&1 || true
-          sdkmanager "platform-tools" "platforms;android-36" "cmake;3.22.1"
-          if [ -d "$ANDROID_HOME/ndk/27.1.12297006" ]; then
-            echo "NDK 27.1.12297006 restored from cache — skipping download"
-          else
-            echo "NDK not cached — downloading (this only happens once)"
-            sdkmanager "ndk;27.1.12297006"
-          fi
+        uses: android-actions/setup-android@v2
+        env:
+          NDK_VERSION: 27.1.12297006
+        with:
+          cmdline-tools-version: 12266719
+          packages: >-
+            platform-tools
+            platforms;android-36
+            cmake;3.22.1
+            ndk;${{ env.NDK_VERSION }}
+          log-accepted-android-sdk-licenses: true
 
       - name: Build driver APK (local)
         env:
