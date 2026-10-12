@@ -162,17 +162,26 @@ jobs:
           java-version: '17'
 
       - name: Set up Android SDK + NDK (skips download if cached)
-        uses: android-actions/setup-android@v2
-        env:
-          NDK_VERSION: 27.1.12297006
-        with:
-          cmdline-tools-version: 12266719
-          packages: >-
-            platform-tools
-            platforms;android-36
-            cmake;3.22.1
-            ndk;${{ env.NDK_VERSION }}
-          log-accepted-android-sdk-licenses: true
+        run: |
+          export ANDROID_HOME="${ANDROID_HOME:-/usr/local/lib/android/sdk}"
+          # Locate sdkmanager wherever the runner put it
+          SDKM=$(command -v sdkmanager || ls -1 "$ANDROID_HOME"/cmdline-tools/*/bin/sdkmanager 2>/dev/null | tail -1)
+          if [ -z "$SDKM" ]; then
+            echo "::error::sdkmanager not found under $ANDROID_HOME"
+            exit 1
+          fi
+          echo "Using sdkmanager at: $SDKM"
+          yes | "$SDKM" --licenses > /dev/null 2>&1 || true
+          "$SDKM" "platform-tools" "platforms;android-36" "cmake;3.22.1"
+          if [ -d "$ANDROID_HOME/ndk/$NDK_VERSION" ]; then
+            echo "NDK $NDK_VERSION restored from cache — skipping download"
+          else
+            echo "NDK $NDK_VERSION not cached — downloading (this only happens once)"
+            "$SDKM" "ndk;$NDK_VERSION"
+          fi
+          echo "$ANDROID_HOME" >> $GITHUB_PATH
+          echo "ANDROID_HOME=$ANDROID_HOME" >> $GITHUB_ENV
+          ls "$ANDROID_HOME/ndk/"
 
       - name: Build driver APK (local)
         env:
