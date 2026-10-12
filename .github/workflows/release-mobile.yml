@@ -12,8 +12,10 @@ concurrency:
 
 jobs:
   release:
-    name: tag-triggered mobile release (EAS build + GitHub Release)
+    name: tag-triggered mobile release (local build + GitHub Release)
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     env:
       TAG: ${{ github.ref_name }}
       NDK_VERSION: 27.1.12297006
