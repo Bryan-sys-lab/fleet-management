@@ -21,11 +21,51 @@ jobs:
         with:
           fetch-depth: 0
 
+      # ── Caches (the reason later builds are fast) ──────────────────────────────────
+      - name: Cache npm (root + mobile)
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.npm
+            mobile/packages/mobile/node_modules
+          key: ${{ runner.os }}-npm-${{ hashFiles('package.json', 'mobile/packages/mobile/package.json') }}
+          restore-keys: |
+            ${{ runner.os }}-npm-
+
+      - name: Cache Gradle (Android deps — the big one)
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('mobile/packages/mobile/package.json') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
+      - name: Cache Android NDK
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.ANDROID_HOME }}/ndk
+          key: ${{ runner.os }}-ndk-27.1.12297006
+          restore-keys: |
+            ${{ runner.os }}-ndk-
+
+      - name: Cache turbo (backend package builds)
+        uses: actions/cache@v4
+        with:
+          path: |
+            .turbo
+            packages/*/.turbo
+            packages/*/dist
+            packages/*/tsconfig.tsbuildinfo
+          key: ${{ runner.os }}-turbo-${{ hashFiles('packages/*/package.json', 'packages/*/src/**/*.ts') }}
+          restore-keys: |
+            ${{ runner.os }}-turbo-
+
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: npm
 
       - name: Install dependencies
         run: npm install
@@ -87,7 +127,9 @@ jobs:
       - name: Install mobile app dependencies
         run: |
           cd mobile/packages/mobile
-          npm install
+          # node_modules is restored from cache when the cache key matches;
+          # npm install then only fetches what changed (or nothing at all).
+          npm install --prefer-offline --no-audit --no-fund
 
       - name: Mobile typecheck
         run: |
@@ -110,8 +152,26 @@ jobs:
           fi
           echo "EXPO_TOKEN is configured."
 
-      # EAS build
-      - name: EAS build (Android - preview APKs for testing)
+      # Build the APKs directly on this runner — no EAS cloud queue involved.
+      # The compiled .apk lands in the repo root and is uploaded as an artifact below.
+      - name: Set up Java 17 (AGP requirement)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Android SDK + NDK (skips download if cached)
+        run: |
+          yes | sdkmanager --licenses > /dev/null 2>&1 || true
+          sdkmanager "platform-tools" "platforms;android-36" "cmake;3.22.1"
+          if [ -d "$ANDROID_HOME/ndk/27.1.12297006" ]; then
+            echo "NDK 27.1.12297006 restored from cache — skipping download"
+          else
+            echo "NDK not cached — downloading (this only happens once)"
+            sdkmanager "ndk;27.1.12297006"
+          fi
+
+      - name: Build driver APK (local)
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
         run: |
@@ -119,13 +179,37 @@ jobs:
           npx eas-cli build \
             --platform android \
             --profile preview-driver \
-            --non-interactive \
-            --clear-cache
+            --local \
+            --output ../../../helix-driver.apk \
+            --non-interactive
+
+      - name: Build admin APK (local)
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: |
+          cd mobile/packages/mobile
           npx eas-cli build \
             --platform android \
             --profile preview-admin \
-            --non-interactive \
-            --clear-cache
+            --local \
+            --output ../../../helix-admin.apk \
+            --non-interactive
+
+      - name: Verify APKs exist
+        run: |
+          ls -lh helix-driver.apk helix-admin.apk
+          file helix-driver.apk helix-admin.apk
+
+      # Upload as GitHub Actions artifacts so they survive after the run
+      - name: Upload APKs as Actions artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: helix-preview-apks-${{ github.ref_name }}
+          path: |
+            helix-driver.apk
+            helix-admin.apk
+          if-no-files-found: error
+          retention-days: 30
 
       # EAS submit (DISABLED - Play Store submission turned off for now)
       # - name: EAS submit to Google Play (driver)
@@ -154,7 +238,7 @@ jobs:
         run: |
           NOTES="Release $TAG\n\n## Changes since last release\n"
           NOTES+="$(git log --oneline --pretty=format:'- %s' $(git describe --tags --abbrev=0)..HEAD)\n"
-          NOTES+="\n## EAS Build\n- Platform: Android\n- Profiles: preview-driver, preview-admin\n- Artifacts: APK for device testing\n- Keystore: helix-release (RSA-2048)\n- Play Store submission: DISABLED"
+          NOTES+="\n## Local Build (GitHub runner)\n- Platform: Android\n- Profiles: preview-driver, preview-admin\n- Artifacts: APK for device testing (also in Actions artifacts)\n- Keystore: helix-release (RSA-2048)\n- Play Store submission: DISABLED"
           echo "notes<<EOF" >> $GITHUB_OUTPUT
           echo "$NOTES" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
@@ -163,11 +247,18 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          RELEASE_NOTES="Release ${{ github.ref_name }}\n\n## Changes since last release\n$(git log --oneline --pretty=format:'- %s' $(git describe --tags --abbrev=0)..HEAD 2>/dev/null || echo 'No previous tag found.')"
+          RELEASE_NOTES="Release ${{ github.ref_name }}\n\n## Changes since last release\n$(git log --oneline --pretty=format:'- %s' $(git describe --tags --abbrev=0)..HEAD 2>/dev/null || echo 'No previous tag found.')\n\n## Local Build (GitHub runner)\n- Platform: Android\n- Profiles: preview-driver, preview-admin\n- Artifacts: APK for device testing (also in Actions artifacts)\n- Play Store submission: DISABLED"
           gh release view "$TAG" 2>/dev/null && \
             gh release edit "$TAG" --draft=false --notes "$RELEASE_NOTES" --title "$TAG" || \
             gh release create "$TAG" --draft=true --title "$TAG" --notes "$RELEASE_NOTES" --repo "$GITHUB_REPOSITORY" || true
           echo "Release created or updated."
+
+      - name: Attach APKs to release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release upload "$TAG" helix-driver.apk helix-admin.apk --clobber --repo "$GITHUB_REPOSITORY" || true
+          echo "APKs attached to release."
 
       - name: Publish release (finalize draft -> published)
         if: ${{ success() }}
