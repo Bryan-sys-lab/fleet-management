@@ -11,6 +11,11 @@ concurrency:
   group: security-${{ github.ref }}
   cancel-in-progress: true
 
+# SARIF uploads to the Security tab need these; without them upload-sarif 403s.
+permissions:
+  contents: read
+  security-events: write
+
 jobs:
   npm-audit:
     name: npm audit (SCA)
@@ -43,16 +48,19 @@ jobs:
         uses: aquasecurity/trivy-action@master
         with:
           image-ref: 'fleet-scan'
-          format: 'table'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
           severity: 'CRITICAL'
           exit-code: '1'
           ignore-unfixed: true
 
-      - name: Upload Trivy scan results to GitHub Security tab
+      - name: Upload Trivy scan results
         if: always()
-        uses: github/codeql-action/upload-sarif@v3
+        uses: actions/upload-artifact@v4
         with:
-          sarif_file: 'results.sarif'
+          name: trivy-results
+          path: trivy-results.sarif
+          if-no-files-found: warn
 
   semgrep:
     name: Semgrep SAST
@@ -73,14 +81,14 @@ jobs:
         uses: returntocorp/semgrep-action@v1
         with:
           config: 'p/security-audit'
-          publishDefects: true
-          sarif: 'semgrep-results.sarif'
 
-      - name: Upload Semgrep SARIF results to GitHub Security tab
+      - name: Upload Semgrep results
         if: always()
-        uses: github/codeql-action/upload-sarif@v3
+        uses: actions/upload-artifact@v4
         with:
-          sarif_file: 'semgrep-results.sarif'
+          name: semgrep-results
+          path: semgrep.sarif
+          if-no-files-found: warn
 
   gitleaks:
     name: Gitleaks secret scanning
@@ -97,12 +105,15 @@ jobs:
           report_format: 'json'
           output: 'gitleaks-report.json'
 
-      - name: Upload gitleaks report for GitHub Security tab
+      # SARIF upload needs GitHub Advanced Security; on a repo without it this
+      # step 403s, so the report is kept as a plain artifact instead.
+      - name: Upload gitleaks report
         if: always()
-        uses: github/codeql-action/upload-sarif@v3
+        uses: actions/upload-artifact@v4
         with:
-          sarif_format: 'json'
-          sarif_file: 'gitleaks-report.json'
+          name: gitleaks-report
+          path: gitleaks-report.json
+          if-no-files-found: warn
 
   checkov:
     name: Checkov IaC scan
@@ -141,7 +152,7 @@ jobs:
         run: npm ci
 
       - name: Install license-checker
-        run: npm install --no-save license-checker-rseidelsohn@1.18.23
+        run: npm install --no-save license-checker-rseidelsohn@latest
 
       - name: Run license check
         run: |
