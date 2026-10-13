@@ -34,8 +34,6 @@ jobs:
   build:
     name: build / lint / typecheck / contract
     runs-on: ubuntu-latest
-    env:
-      WEBHOOK_SECRET: test-secret-for-ci
     steps:
       - uses: actions/checkout@v4
 
@@ -91,7 +89,6 @@ jobs:
           --health-timeout 5s
           --health-retries 5
     env:
-      WEBHOOK_SECRET: test-secret-for-ci
       DATABASE_URL: postgresql://postgres:pg_local_dev@localhost:5444/fleet
       REDIS_URL: redis://localhost:6379
       PG_INTEGRATION: "1"
@@ -149,7 +146,6 @@ jobs:
           --health-timeout 5s
           --health-retries 5
     env:
-      WEBHOOK_SECRET: test-secret-for-ci
       DATABASE_URL: postgresql://postgres:pg_local_dev@localhost:5444/fleet
       REDIS_URL: redis://localhost:6379
     steps:
