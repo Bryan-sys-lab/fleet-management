@@ -13,7 +13,7 @@
 //   PSQL_BIN=C:\path\to\psql.exe node db/validate.mjs
 
 import { spawnSync } from "node:child_process";
-import { mkdtempSync, readFileSync, writeFileSync, rmSync } from "node:fs";
+import { mkdtempSync, readFileSync, writeFileSync, rmSync, readdirSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -25,20 +25,15 @@ const PSQL = process.env.PSQL_BIN ?? "psql";
 const PGURI = process.env.PGURI ?? "postgresql://postgres:pg_local_dev@localhost:5444/fleet";
 const POSTGIS_MODE = process.env.POSTGIS ?? "real";
 
-const SCHEMA_FILES = [
-  "00_extensions.sql",
-  "01_enums.sql",
-  "02_identity.sql",
-  "03_platform_core.sql",
-  "04_assets.sql",
-  "05_operations.sql",
-  "06_telemetry_hos.sql",
-  "07_financial.sql",
-  "08_safety.sql",
-  "09_audit_notifications.sql",
-  "10_partitions.sql",
-  "11_views.sql",
-];
+/**
+ * Every .sql in db/schema, in name order (00_ .. 16_). Discovered rather than
+ * hardcoded: a fixed list silently stopped at 11_views.sql, so 12_..16_ — error
+ * events, onboarding, tenancy, vehicle issues, privacy requests, dead-letter —
+ * were never applied and the API failed at runtime on tables that "should" exist.
+ */
+const SCHEMA_FILES = readdirSync(path.join(ROOT, "db", "schema"))
+  .filter((f) => f.endsWith(".sql"))
+  .sort();
 
 /** Run psql against `uri`, returning stdout. Throws with stderr on failure. */
 function psql(uri, args) {
