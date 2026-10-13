@@ -16,10 +16,13 @@ jobs:
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     steps:
+      # persist-credentials: false is required — otherwise checkout's persisted GITHUB_TOKEN
+      # extraheader overrides the PAT and the push runs as github-actions[bot], which is denied.
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.workflow_run.head_sha }}
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -54,6 +57,7 @@ jobs:
           echo "NEW_TAG=$NEW_TAG" >> $GITHUB_ENV
 
       - name: Idempotency — skip if already tagged
+        id: idempotency
         run: |
           if git tag -l "v*" | grep -q "^${NEW_TAG}$"; then
             echo "Tag ${NEW_TAG} already exists — exiting cleanly."
@@ -68,12 +72,13 @@ jobs:
         env:
           RELEASE_TAG_TOKEN: ${{ secrets.RELEASE_TAG_TOKEN }}
         run: |
-          if [ -z "$RELEASE_TAG_TOKEN" ]; then
-            echo "::error::RELEASE_TAG_TOKEN secret is required for automated tagging."
+          if [ -z "$RELEASE_TAG_TOKEN" ] || [ "$RELEASE_TAG_TOKEN" = "github_pat_placeholder_replace_with_real_pat" ]; then
+            echo "::error::RELEASE_TAG_TOKEN must be a real fine-grained PAT (contents:write + workflow), not the placeholder."
             exit 1
           fi
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git tag -a "$NEW_TAG" -m "Automated release: $NEW_TAG"
-          git push origin "$NEW_TAG"
-          echo "Tag $NEW_TAG pushed — release.yml will pick it up."
+          # Authenticate as the PAT, not as github-actions[bot]
+          git push "https://x-access-token:${RELEASE_TAG_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" "$NEW_TAG"
+          echo "Tag $NEW_TAG pushed — release-mobile will pick it up."

@@ -67,8 +67,6 @@ jobs:
     name: integration (throwaway PG + Redis)
     needs: build
     runs-on: ubuntu-latest
-    env:
-      WEBHOOK_SECRET: test-secret-for-ci
     services:
       postgres:
         image: postgres:16
@@ -93,6 +91,7 @@ jobs:
           --health-timeout 5s
           --health-retries 5
     env:
+      WEBHOOK_SECRET: test-secret-for-ci
       DATABASE_URL: postgresql://postgres:pg_local_dev@localhost:5444/fleet
       REDIS_URL: redis://localhost:6379
       PG_INTEGRATION: "1"
@@ -107,8 +106,6 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
-        env:
-          WEBHOOK_SECRET: test-secret-for-ci
 
       - name: Validate DDL + seed (db/validate pattern)
         run: npm run db:validate
@@ -128,8 +125,6 @@ jobs:
     name: chaos / fault-injection
     needs: build
     runs-on: ubuntu-latest
-    env:
-      WEBHOOK_SECRET: test-secret-for-ci
     services:
       postgres:
         image: postgres:16
@@ -154,6 +149,7 @@ jobs:
           --health-timeout 5s
           --health-retries 5
     env:
+      WEBHOOK_SECRET: test-secret-for-ci
       DATABASE_URL: postgresql://postgres:pg_local_dev@localhost:5444/fleet
       REDIS_URL: redis://localhost:6379
     steps:
@@ -167,13 +163,9 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
-        env:
-          WEBHOOK_SECRET: test-secret-for-ci
 
       - name: Build
         run: npm run build
-        env:
-          WEBHOOK_SECRET: test-secret-for-ci
 
       - name: Run chaos / fault-injection tests (network-throttle + DB-latency + Redis-failure + external-5xx + 50-tracker load)
         run: npx jest --config packages/worker/jest.config.cjs --testPathPattern chaos
