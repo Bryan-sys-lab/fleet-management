@@ -59,7 +59,8 @@ integrationDescribe("backend integration (:5444)", () => {
       const u = await client.query<{ id: string }>(
         `INSERT INTO app.users (email, password_hash, full_name, is_active, mfa_enabled, locale)
          VALUES ($1,$2,'Integration Driver',true,false,'en')
-         ON CONFLICT (email) DO UPDATE SET password_hash = EXCLUDED.password_hash
+         ON CONFLICT (email) WHERE deleted_at IS NULL
+         DO UPDATE SET password_hash = EXCLUDED.password_hash
          RETURNING id`,
         [ADMIN_EMAIL, hash],
       );
