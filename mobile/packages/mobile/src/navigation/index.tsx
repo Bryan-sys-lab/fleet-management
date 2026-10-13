@@ -1,5 +1,5 @@
 import React from 'react';
-import { View } from 'react-native';
+import { Pressable, View } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -31,7 +31,8 @@ import { MfaSetupScreen } from '../screens/settings/MfaSetupScreen';
 import { EditQueuedScreen } from '../screens/settings/EditQueuedScreen';
 import { LiveAlertBanner } from '../design/LiveAlertBanner';
 import { Toast } from '../design/Toast';
-import { OfflineBanner } from '../design/components';
+import { Body, OfflineBanner } from '../design/components';
+import { BYPASS_ROLES, DEV_AUTH_BYPASS, bypassPrincipal } from '../core/devBypass';
 import { color, font, admin } from '../design/tokens';
 import { navRef } from './ref';
 
@@ -143,5 +144,35 @@ export function RootNavigator() {
   else if (auth !== 'signedIn') body = <AuthStack />;
   else if (!activeRole) body = <RoleSwitchScreen />;
   else body = activeRole === 'ADMIN' ? <AdminStack /> : <DriverStack />;
-  return <NavigationContainer ref={navRef}><View style={{ flex: 1 }}><LiveAlertBanner />{!online ? <OfflineBanner /> : null}{body}<Toast /></View></NavigationContainer>;
+  return <NavigationContainer ref={navRef}><View style={{ flex: 1 }}><LiveAlertBanner />{!online ? <OfflineBanner /> : null}{body}<DevGate /><Toast /></View></NavigationContainer>;
+}
+
+/**
+ * Design-review only: flips the active experience (driver <-> admin) without signing out, so both
+ * stacks can be reviewed in one session. Renders nothing at all in a release build.
+ */
+function DevGate() {
+  const { activeRole } = useUi();
+  if (!DEV_AUTH_BYPASS) return null;
+  return (
+    <View style={{ position: 'absolute', right: 8, bottom: 24, zIndex: 999, alignItems: 'flex-end' }}>
+      <View style={{ flexDirection: 'row', backgroundColor: '#000000CC', borderRadius: 20, padding: 4 }}>
+        {BYPASS_ROLES.map((r) => (
+          <Pressable
+            key={r}
+            accessibilityRole="button"
+            onPress={() => {
+              const ui = useUi.getState();
+              ui.setActiveRole(r);
+              ui.setPrincipal(bypassPrincipal(r));
+              navRef.reset({ index: 0, routes: [{ name: r === 'ADMIN' ? 'AdminTabs' : 'DriverTabs' }] });
+            }}
+            style={{ paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16, backgroundColor: activeRole === r ? color.verge : 'transparent' }}
+          >
+            <Body style={{ color: activeRole === r ? color.paper : '#FFFFFF99', fontSize: 11, letterSpacing: 1 }}>{r}</Body>
+          </Pressable>
+        ))}
+      </View>
+    </View>
+  );
 }

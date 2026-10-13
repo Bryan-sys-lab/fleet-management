@@ -27,7 +27,8 @@
       },
       "env": {
         "APP_VARIANT": "driver",
-        "REQUIRE_PINNING": "1"
+        "REQUIRE_PINNING": "1",
+        "EXPO_PUBLIC_DEV_AUTH_BYPASS": "1"
       }
     },
     "admin": {
@@ -37,7 +38,8 @@
       },
       "env": {
         "APP_VARIANT": "admin",
-        "REQUIRE_PINNING": "1"
+        "REQUIRE_PINNING": "1",
+        "EXPO_PUBLIC_DEV_AUTH_BYPASS": "1"
       }
     },
     "preview-driver": {
@@ -47,7 +49,8 @@
       },
       "env": {
         "APP_VARIANT": "driver",
-        "REQUIRE_PINNING": "1"
+        "REQUIRE_PINNING": "1",
+        "EXPO_PUBLIC_DEV_AUTH_BYPASS": "1"
       }
     },
     "preview-admin": {
@@ -57,7 +60,8 @@
       },
       "env": {
         "APP_VARIANT": "admin",
-        "REQUIRE_PINNING": "1"
+        "REQUIRE_PINNING": "1",
+        "EXPO_PUBLIC_DEV_AUTH_BYPASS": "1"
       }
     },
     "production-driver": {

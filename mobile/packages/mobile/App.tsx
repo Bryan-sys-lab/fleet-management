@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { AppState, type AppStateStatus } from 'react-native';
 import * as Linking from 'expo-linking';
 import * as LocalAuthentication from 'expo-local-authentication';
+import * as SecureStore from 'expo-secure-store';
 import * as Network from 'expo-network';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { focusManager, onlineManager, useQuery } from '@tanstack/react-query';
@@ -18,6 +19,8 @@ import { initPushRoleReader, stopRealtime, syncRealtime } from './src/realtimeSe
 import { initLocalNotifications, onNotificationTap } from './src/push';
 import { runSecurityChecks } from './src/security';
 import { parseDeepLink } from './src/core/deepLinks';
+import { DEV_AUTH_BYPASS, bypassPrincipal } from './src/core/devBypass';
+import { ROLE_KEY, type Role } from './src/state/roles';
 import { PERSIST_MAX_AGE } from './src/core/queryConfig';
 import { shiftActiveQuery, vehicleStatesQuery } from './src/queries';
 import { PrivacyShield } from './src/design/PrivacyShield';
@@ -36,6 +39,16 @@ onlineManager.setEventListener((setOnline) => { const sub = Network.addNetworkSt
  */
 async function boot() {
   const ui = useUi.getState();
+  // Design-review bypass: skip the API entirely (see core/devBypass.ts). Off in release builds.
+  if (DEV_AUTH_BYPASS) {
+    ui.setOnline(true);
+    const saved = await SecureStore.getItemAsync(ROLE_KEY);
+    const role: Role = saved === 'ADMIN' ? 'ADMIN' : 'DRIVER';
+    ui.setPrincipal(bypassPrincipal(role));
+    ui.setAuth('signedIn');
+    ui.setActiveRole(role);
+    return;
+  }
   const verdict = await runSecurityChecks();
   if (!verdict.ok) { ui.setSecurityReason(verdict.reason); ui.setAuth('blocked'); return; }
   const [ceiling, roles, refresh] = [await session.checkAuthCeiling(), await session.roles(), await session.getRefreshToken()];
@@ -102,7 +115,8 @@ export default function App() {
 /** One socket per role: the gateway picks the rooms from the token, the app only picks which events to listen for. */
 function RealtimeBridge() {
   const { auth, activeRole } = useUi();
-  const enabled = auth === 'signedIn' && !!activeRole;
+  // The bypass carries no token, so a socket would only fail; skip it and keep the console clean.
+  const enabled = auth === 'signedIn' && !!activeRole && !DEV_AUTH_BYPASS;
   const shift = useQuery({ ...shiftActiveQuery, enabled: enabled && activeRole === 'DRIVER' });
   useEffect(() => { if (enabled && activeRole) syncRealtime(activeRole); }, [enabled, activeRole]);
   return null;
