@@ -71,14 +71,21 @@ integrationDescribe("backend integration (:5444)", () => {
         [driverId],
       );
       const v = await client.query<{ id: string }>(
-        `INSERT INTO app.vehicles (plate, vin, make, model, status)
-         VALUES ('INTG1', 'INTG-VIN', 'Test', 'Truck', 'ACTIVE') RETURNING id`,
+        `INSERT INTO app.vehicles (license_plate, make, model, fuel_tank_capacity_litres, current_odometer_km, status)
+         VALUES ('INTG1', 'Test', 'Truck', 300, 0, 'AVAILABLE') RETURNING id`,
       );
       vehicleId = v.rows[0]!.id;
+      // A shift hangs off app.drivers (not app.users directly), so the driver row must exist first.
+      const d = await client.query<{ id: string }>(
+        `INSERT INTO app.drivers (user_id, licence_number, licence_class)
+         VALUES ($1, 'INTG-LICENCE', 'C') RETURNING id`,
+        [driverId],
+      );
+      const driverRowId = d.rows[0]!.id;
       const s = await client.query<{ id: string }>(
-        `INSERT INTO app.shifts (user_id, vehicle_id, status, start_time)
-         VALUES ($1,$2,'IN_PROGRESS', now()) RETURNING id`,
-        [driverId, vehicleId],
+        `INSERT INTO app.shifts (driver_id, vehicle_id, clock_in_at, start_odometer_km, state)
+         VALUES ($1,$2, now(), 0, 'OPEN') RETURNING id`,
+        [driverRowId, vehicleId],
       );
       shiftId = s.rows[0]!.id;
       const t = await client.query<{ id: string }>(
@@ -206,13 +213,13 @@ integrationDescribe("backend integration (:5444)", () => {
       const tenantB = tb.rows[0]!.id;
 
       const va = await client.query<{ id: string }>(
-        `INSERT INTO app.vehicles (tenant_id, plate, vin, make, model, status)
-         VALUES ($1,'AAA1','VIN-A','A','A','ACTIVE') RETURNING id`,
+        `INSERT INTO app.vehicles (tenant_id, license_plate, make, model, fuel_tank_capacity_litres, status)
+         VALUES ($1,'AAA1','A','A',300,'AVAILABLE') RETURNING id`,
         [tenantA],
       );
       await client.query(
-        `INSERT INTO app.vehicles (tenant_id, plate, vin, make, model, status)
-         VALUES ($1,'BBB1','VIN-B','B','B','ACTIVE')`,
+        `INSERT INTO app.vehicles (tenant_id, license_plate, make, model, fuel_tank_capacity_litres, status)
+         VALUES ($1,'BBB1','B','B',300,'AVAILABLE')`,
         [tenantB],
       );
 
@@ -230,9 +237,9 @@ integrationDescribe("backend integration (:5444)", () => {
       // tenant-scoped admin users list (the authoritative API-level isolation proof).
       const hash = await argon2idHasher.hash(ADMIN_PASSWORD);
       const mgr = await client.query<{ id: string }>(
-        `INSERT INTO app.users (tenant_id, email, password_hash, full_name, is_active, locale)
-         VALUES ($1,'mgr-b@fleet.test',$2,'Mgr B',true,'en') RETURNING id`,
-        [tenantB, hash],
+        `INSERT INTO app.users (email, password_hash, full_name, is_active, locale)
+         VALUES ('mgr-b@fleet.test',$1,'Mgr B',true,'en') RETURNING id`,
+        [hash],
       );
       await client.query(
         `INSERT INTO app.user_tenants (user_id, tenant_id, is_primary) VALUES ($1,$2,true)`,
@@ -245,9 +252,9 @@ integrationDescribe("backend integration (:5444)", () => {
       );
       // A user that belongs ONLY to tenant A.
       const aUser = await client.query<{ id: string }>(
-        `INSERT INTO app.users (tenant_id, email, password_hash, full_name, is_active, locale)
-         VALUES ($1,'user-a@fleet.test',$2,'User A',true,'en') RETURNING id`,
-        [tenantA, hash],
+        `INSERT INTO app.users (email, password_hash, full_name, is_active, locale)
+         VALUES ('user-a@fleet.test',$1,'User A',true,'en') RETURNING id`,
+        [hash],
       );
       await client.query(
         `INSERT INTO app.user_tenants (user_id, tenant_id, is_primary) VALUES ($1,$2,true)`,
