@@ -104,13 +104,25 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Validate DDL + seed (db/validate pattern)
+      - name: Apply schema to the throwaway cluster (PostGIS shim)
         run: npm run db:validate
-        continue-on-error: true
+        env:
+          # The plain postgres:16 service image has no PostGIS, so the shim
+          # rewrites geography(Point,4326) → geography for validation. Without
+          # this the apply fails at 00_extensions.sql and the integration tests
+          # then fail with relation "app.users" does not exist.
+          POSTGIS: shim
+          PGURI: postgresql://postgres:pg_local_dev@localhost:5444/fleet
 
+      # Non-blocking on purpose: this cluster uses the PostGIS shim, which rewrites
+      # geography(Point,4326) → geography. That legitimately changes information_schema
+      # typing, so the generated db.ts would not match the committed one. It is a
+      # real-schema drift gate, meant to run where PostGIS is actually installed.
       - name: Contract — db.ts ↔ live schema
         run: npm run db:types:check
         continue-on-error: true
+        env:
+          POSTGIS: shim
 
       - name: Build
         run: npm run build
