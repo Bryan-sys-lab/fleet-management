@@ -1,4 +1,13 @@
 {
+  "globalPassThroughEnv": [
+    "WEBHOOK_SECRET",
+    "SECURITY_ENFORCE",
+    "DATABASE_URL",
+    "REDIS_URL",
+    "PG_INTEGRATION",
+    "NODE_ENV",
+    "CI"
+  ],
   "tasks": {
     "build": {
       "dependsOn": ["^build"],

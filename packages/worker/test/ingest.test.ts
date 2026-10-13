@@ -88,8 +88,8 @@ describe("parseTraccarPosition: a phone point has no Traccar identity", () => {
       { ...base, id: "not-a-number" },              // garbage
     ]) {
       const pos = parseTraccarPosition(raw);
-      expect(pos.traccarPositionId, JSON.stringify(raw.id)).toBeNull();
-      expect(pos.traccarDeviceId, JSON.stringify(raw.deviceId)).toBeNull();
+      expect(pos.traccarPositionId).toBeNull();
+      expect(pos.traccarDeviceId).toBeNull();
       // The insert binds these straight into a bigint column, so neither may be NaN.
       expect(Number.isNaN(pos.traccarPositionId as unknown as number)).toBe(false);
     }
