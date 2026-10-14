@@ -75,3 +75,12 @@ kotlin-app/gradle/wrapper/gradle-wrapper.properties
 # Kilo agent memory
 **/.kilocode/
 **/.opencode/
+
+# Signing material must never be committed — the keystore is delivered via the
+# PLAY_KEYSTORE_BASE64 secret in CI.
+*.p12
+*.keystore
+*.jks
+
+# Expo local state (device registrations, local caches)
+mobile/packages/mobile/.expo/
