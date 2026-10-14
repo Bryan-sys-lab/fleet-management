@@ -6,7 +6,7 @@
 
 import { Router, type Request, type Response } from "express";
 import { z } from "zod";
-import { type IdempotencyService, type PermissionCode, type PoolLike, type Principal, type UserRow, type DriverDeviceRow } from "@fleet/shared";
+import { err, ok, type DriverDeviceRow, type IdempotencyService, type PermissionCode, type PoolLike, type Principal, type UserRow } from "@fleet/shared";
 import { VerifyPurchaseSchema, Forbidden } from "@fleet/shared";
 import {
   AssignAdminsSchema,
@@ -152,7 +152,7 @@ export function createAdminRouter(deps: AdminRouterDeps): Router {
           ...(input.roles ? { roles: [...input.roles] } : {}),
           createdBy: principal.userId,
         });
-        if (!result.ok) return result.error as never;
+        if (!result.ok) return err(result.error);
         tx.audit({
           action: "CREATE",
           entity_table: "app.users",
@@ -166,11 +166,11 @@ export function createAdminRouter(deps: AdminRouterDeps): Router {
           http_method: req.method,
           reason: "DRIVER_CREATE",
         });
-        return {
+        return ok({
           status: 201,
           body: { user_id: result.value.id, email: result.value.email, status: "PENDING" },
           resourceId: result.value.id,
-        } as never;
+        });
       }),
     ),
   );
@@ -186,7 +186,7 @@ export function createAdminRouter(deps: AdminRouterDeps): Router {
         const principal = ctx.principal as Principal;
         const svc = makeServices(tx.client, infra);
         const result = await svc.admin.approveDriver(req.params.id!);
-        if (!result.ok) return result.error as never;
+        if (!result.ok) return err(result.error);
         tx.audit({
           action: "UPDATE",
           entity_table: "app.users",
@@ -201,7 +201,7 @@ export function createAdminRouter(deps: AdminRouterDeps): Router {
           http_method: req.method,
           reason: "DRIVER_APPROVE",
         });
-        return { status: 200, body: { user_id: result.value.id, status: "ACTIVE" } } as never;
+        return ok({ status: 200, body: { user_id: result.value.id, status: "ACTIVE" } });
       }),
     ),
   );
@@ -250,7 +250,7 @@ export function createAdminRouter(deps: AdminRouterDeps): Router {
           ...(input.phone !== undefined ? { phone: input.phone } : {}),
           ...(input.locale !== undefined ? { locale: input.locale } : {}),
         });
-        if (!result.ok) return result.error as never;
+        if (!result.ok) return err(result.error);
         tx.audit({
           action: "UPDATE",
           entity_table: "app.users",
@@ -265,7 +265,7 @@ export function createAdminRouter(deps: AdminRouterDeps): Router {
           http_method: req.method,
           reason: "PROFILE_UPDATE",
         });
-        return {
+        return ok({
           status: 200,
           body: {
             user_id: result.value.id,
@@ -275,7 +275,7 @@ export function createAdminRouter(deps: AdminRouterDeps): Router {
             locale: result.value.locale,
           },
           resourceId: result.value.id,
-        } as never;
+        });
       }),
     ),
   );
@@ -291,7 +291,7 @@ export function createAdminRouter(deps: AdminRouterDeps): Router {
         const principal = ctx.principal as Principal;
         const svc = makeServices(tx.client, infra);
         const result = await svc.admin.suspendUser(req.params.id!);
-        if (!result.ok) return result.error as never;
+        if (!result.ok) return err(result.error);
         tx.audit({
           action: "UPDATE",
           entity_table: "app.users",
@@ -306,7 +306,7 @@ export function createAdminRouter(deps: AdminRouterDeps): Router {
           http_method: req.method,
           reason: "USER_SUSPEND",
         });
-        return { status: 200, body: { user_id: result.value.id, status: "SUSPENDED" } } as never;
+        return ok({ status: 200, body: { user_id: result.value.id, status: "SUSPENDED" } });
       }),
     ),
   );
@@ -322,7 +322,7 @@ export function createAdminRouter(deps: AdminRouterDeps): Router {
         const principal = ctx.principal as Principal;
         const svc = makeServices(tx.client, infra);
         const result = await svc.admin.reinstateUser(req.params.id!);
-        if (!result.ok) return result.error as never;
+        if (!result.ok) return err(result.error);
         tx.audit({
           action: "UPDATE",
           entity_table: "app.users",
@@ -337,7 +337,7 @@ export function createAdminRouter(deps: AdminRouterDeps): Router {
           http_method: req.method,
           reason: "USER_REINSTATE",
         });
-        return { status: 200, body: { user_id: result.value.id, status: "ACTIVE" } } as never;
+        return ok({ status: 200, body: { user_id: result.value.id, status: "ACTIVE" } });
       }),
     ),
   );
@@ -353,7 +353,7 @@ export function createAdminRouter(deps: AdminRouterDeps): Router {
         const principal = ctx.principal as Principal;
         const svc = makeServices(tx.client, infra);
         const result = await svc.admin.revokeDevice(req.params.deviceId!, principal.userId);
-        if (!result.ok) return result.error as never;
+        if (!result.ok) return err(result.error);
         tx.audit({
           action: "DEVICE_REVOKE",
           entity_table: "app.driver_devices",
@@ -365,7 +365,7 @@ export function createAdminRouter(deps: AdminRouterDeps): Router {
           endpoint: req.path,
           http_method: req.method,
         });
-        return { status: 204, body: null } as never;
+        return ok({ status: 204, body: null });
       }),
     ),
   );
@@ -383,7 +383,7 @@ export function createAdminRouter(deps: AdminRouterDeps): Router {
         const targetUserId = input.user_id ?? principal.userId;
         const svc = makeServices(tx.client, infra);
         const result = await svc.admin.revokeSessions(targetUserId);
-        if (!result.ok) return result.error as never;
+        if (!result.ok) return err(result.error);
         tx.audit({
           action: "LOGOUT",
           entity_table: "app.user_sessions",
@@ -395,7 +395,7 @@ export function createAdminRouter(deps: AdminRouterDeps): Router {
           http_method: req.method,
           reason: "revoke_all_sessions",
         });
-        return { status: 204, body: null } as never;
+        return ok({ status: 204, body: null });
       }),
     ),
   );
@@ -446,8 +446,8 @@ export function createAdminRouter(deps: AdminRouterDeps): Router {
           email: principal.email,
           roles: principal.roles,
         });
-        if (result.ok) return { status: 200, body: result.value } as never;
-        return result.error as never;
+        if (result.ok) return ok({ status: 200, body: result.value });
+        return err(result.error);
       }),
     ),
   );
@@ -508,12 +508,12 @@ export function createAdminRouter(deps: AdminRouterDeps): Router {
           roleCode: input.role_code,
           invitedBy: principal.userId,
         });
-        if (!result.ok) return result.error as never;
+        if (!result.ok) return err(result.error);
         // The activation token lives only in the email sent by TenancyService; the HTTP response
         // deliberately omits `acceptUrl` so the capability never leaks through the API surface.
         const { acceptUrl, ...safe } = result.value;
         void acceptUrl;
-        return { status: 201, body: safe } as never;
+        return ok({ status: 201, body: safe });
       }),
     ),
   );
@@ -535,8 +535,8 @@ export function createAdminRouter(deps: AdminRouterDeps): Router {
           roleCode: input.role_code,
           actorUserId: principal.userId,
         });
-        if (!result.ok) return result.error as never;
-        return { status: 204, body: null } as never;
+        if (!result.ok) return err(result.error);
+        return ok({ status: 204, body: null });
       }),
     ),
   );
@@ -559,8 +559,8 @@ export function createAdminRouter(deps: AdminRouterDeps): Router {
           driverIds: input.driver_ids,
           actorUserId: principal.userId,
         });
-        if (!result.ok) return result.error as never;
-        return { status: 204, body: null } as never;
+        if (!result.ok) return err(result.error);
+        return ok({ status: 204, body: null });
       }),
     ),
   );
@@ -614,7 +614,7 @@ export function createAdminRouter(deps: AdminRouterDeps): Router {
           driverIds: input.driver_ids,
           actorUserId: principal.userId,
         });
-        if (!result.ok) return result.error as never;
+        if (!result.ok) return err(result.error);
         tx.audit({
           action: "SCOPE_ASSIGN",
           entity_table: "app.manager_assignments",
@@ -627,7 +627,7 @@ export function createAdminRouter(deps: AdminRouterDeps): Router {
           endpoint: req.path,
           http_method: req.method,
         });
-        return { status: 204, body: null } as never;
+        return ok({ status: 204, body: null });
       }),
     ),
   );

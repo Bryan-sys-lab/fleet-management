@@ -8,7 +8,7 @@
 // notifications.
 
 import { Router, type Request, type Response } from "express";
-import { type IdempotencyService, type PermissionCode, type PoolLike, type Principal } from "@fleet/shared";
+import { err, ok, type IdempotencyService, type PermissionCode, type PoolLike, type Principal } from "@fleet/shared";
 import { authenticate } from "../../middleware/authenticate";
 import { idempotency } from "../../middleware/idempotency";
 import { requirePermission } from "../../middleware/requirePermission";
@@ -96,7 +96,7 @@ export function createNotificationRouter(deps: NotificationRouterDeps): Router {
         const principal = ctx.principal as Principal;
         const svc = makeServices(tx.client, infra);
         const result = await svc.notification.markRead(tx, req.params.id!, principal.userId);
-        if (!result.ok) return result.error as never;
+        if (!result.ok) return err(result.error);
         tx.audit({
           action: "UPDATE",
           entity_table: "app.notifications",
@@ -110,7 +110,7 @@ export function createNotificationRouter(deps: NotificationRouterDeps): Router {
           endpoint: req.path,
           http_method: req.method,
         });
-        return { status: 204, body: undefined, resourceId: result.value.id } as never;
+        return ok({ status: 204, body: undefined, resourceId: result.value.id });
       }),
     ),
   );
@@ -127,7 +127,7 @@ export function createNotificationRouter(deps: NotificationRouterDeps): Router {
         const principal = ctx.principal as Principal;
         const svc = makeServices(tx.client, infra);
         const result = await svc.notification.markAllRead(principal.userId);
-        if (!result.ok) return result.error as never;
+        if (!result.ok) return err(result.error);
         tx.audit({
           action: "UPDATE",
           entity_table: "app.notifications",
@@ -141,7 +141,7 @@ export function createNotificationRouter(deps: NotificationRouterDeps): Router {
           endpoint: req.path,
           http_method: req.method,
         });
-        return { status: 204, body: undefined } as never;
+        return ok({ status: 204, body: undefined });
       }),
     ),
   );

@@ -5,7 +5,7 @@
 
 import { Router, type Request, type Response } from "express";
 import { z } from "zod";
-import { type IdempotencyService, type PermissionCode, type PoolLike, type Principal } from "@fleet/shared";
+import { err, ok, type IdempotencyService, type PermissionCode, type PoolLike, type Principal } from "@fleet/shared";
 import { authenticate } from "../../middleware/authenticate";
 import { idempotency } from "../../middleware/idempotency";
 import { requirePermission } from "../../middleware/requirePermission";
@@ -122,7 +122,7 @@ export function createVehicleRouter(deps: VehicleRouterDeps): Router {
           ownershipType: input.ownership_type,
           fuelTankCapacityLitres: input.fuel_tank_capacity_litres,
         });
-        if (!result.ok) return result.error as never;
+        if (!result.ok) return err(result.error);
         tx.audit({
           action: "CREATE",
           entity_table: "app.vehicles",
@@ -135,7 +135,7 @@ export function createVehicleRouter(deps: VehicleRouterDeps): Router {
           endpoint: req.path,
           http_method: req.method,
         });
-        return { status: 201, body: result.value, resourceId: result.value.id } as never;
+        return ok({ status: 201, body: result.value, resourceId: result.value.id });
       }),
     ),
   );
@@ -158,7 +158,7 @@ export function createVehicleRouter(deps: VehicleRouterDeps): Router {
           isOperational: input.is_operational,
           notes: input.notes,
         });
-        if (!result.ok) return result.error as never;
+        if (!result.ok) return err(result.error);
         tx.audit({
           action: "UPDATE",
           entity_table: "app.vehicles",
@@ -172,7 +172,7 @@ export function createVehicleRouter(deps: VehicleRouterDeps): Router {
           endpoint: req.path,
           http_method: req.method,
         });
-        return { status: 200, body: result.value } as never;
+        return ok({ status: 200, body: result.value });
       }),
     ),
   );

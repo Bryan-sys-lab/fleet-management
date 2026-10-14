@@ -16,14 +16,7 @@
 
 import { Router, type Request, type Response } from "express";
 import { z } from "zod";
-import {
-  Forbidden,
-  NotFound,
-  type IdempotencyService,
-  type PermissionCode,
-  type PoolLike,
-  type Principal,
-} from "@fleet/shared";
+import { Forbidden, NotFound, err, ok, type IdempotencyService, type PermissionCode, type PoolLike, type Principal } from "@fleet/shared";
 import { ExportRequestSchema, DeletionRequestSchema } from "@fleet/shared";
 import { authenticate } from "../../middleware/authenticate";
 import { idempotency } from "../../middleware/idempotency";
@@ -73,10 +66,10 @@ export function createPrivacyRouter(deps: PrivacyRouterDeps): Router {
         const input = parseBody(ExportRequestSchema, req);
         const svc = makeServices(tx.client, infra);
         const driver = await svc.drivers.findByUserId(principal.userId);
-        if (!driver) return new Forbidden("Only a driver can submit a DSAR export request") as never;
+        if (!driver) return err(new Forbidden("Only a driver can submit a DSAR export request"));
 
         const result = await svc.privacy.createExportRequest(tx, principal.userId, principal.tenantId, input.notes ?? null);
-        if (!result.ok) return result.error as never;
+        if (!result.ok) return err(result.error);
 
         tx.audit({
           action: "EXPORT",
@@ -93,11 +86,11 @@ export function createPrivacyRouter(deps: PrivacyRouterDeps): Router {
           http_method: req.method,
         });
 
-        return {
+        return ok({
           status: 202,
           body: { request_id: result.value.request_id, status: result.value.status },
           resourceId: result.value.request_id,
-        } as never;
+        });
       }),
     ),
   );
@@ -115,10 +108,10 @@ export function createPrivacyRouter(deps: PrivacyRouterDeps): Router {
         const input = parseBody(DeletionRequestSchema, req);
         const svc = makeServices(tx.client, infra);
         const driver = await svc.drivers.findByUserId(principal.userId);
-        if (!driver) return new Forbidden("Only a driver can submit a DSAR deletion request") as never;
+        if (!driver) return err(new Forbidden("Only a driver can submit a DSAR deletion request"));
 
         const result = await svc.privacy.createDeletionRequest(tx, principal.userId, principal.tenantId, input.reason);
-        if (!result.ok) return result.error as never;
+        if (!result.ok) return err(result.error);
 
         tx.audit({
           action: "DELETE",
@@ -135,11 +128,11 @@ export function createPrivacyRouter(deps: PrivacyRouterDeps): Router {
           http_method: req.method,
         });
 
-        return {
+        return ok({
           status: 202,
           body: { request_id: result.value.request_id, status: result.value.status },
           resourceId: result.value.request_id,
-        } as never;
+        });
       }),
     ),
   );
@@ -188,11 +181,11 @@ export function createPrivacyRouter(deps: PrivacyRouterDeps): Router {
           req.params.id!,
           principal.userId,
         );
-        if (!result.ok) return result.error as never;
-        return {
+        if (!result.ok) return err(result.error);
+        return ok({
           status: 200,
           body: result.value,
-        } as never;
+        });
       }),
     ),
   );

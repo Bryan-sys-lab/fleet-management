@@ -6,7 +6,7 @@
 // authenticated principal.
 
 import { Router, type Request, type Response } from "express";
-import { NotFound, type IdempotencyService, type PoolLike, type Principal } from "@fleet/shared";
+import { NotFound, err, ok, type IdempotencyService, type PoolLike, type Principal } from "@fleet/shared";
 import { MediaUploadSchema } from "@fleet/shared";
 import { authenticate } from "../../middleware/authenticate";
 import { asyncHandler } from "../problem";
@@ -42,8 +42,8 @@ export function createMediaRouter(deps: MediaRouterDeps): Router {
           email: principal.email,
           roles: principal.roles,
         }, input);
-        if (result.ok) return { status: 201, body: result.value, resourceId: result.value.mediaObjectId } as never;
-        return result.error as never;
+        if (result.ok) return ok({ status: 201, body: result.value, resourceId: result.value.mediaObjectId });
+        return err(result.error);
       }),
     ),
   );
@@ -67,7 +67,7 @@ export function createMediaRouter(deps: MediaRouterDeps): Router {
           [id, principal.tenantId],
         ).then((r) => r.rows[0] ?? null),
       );
-      if (!obj) return new NotFound("Media object not found") as never;
+      if (!obj) return err(new NotFound("Media object not found"));
 
       const presigned = await infra.presigner.presignGet(
         obj.bucket,

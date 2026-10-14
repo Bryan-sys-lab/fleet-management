@@ -70,16 +70,19 @@ export class FuelService {
     // driver could attribute a purchase (and its cost) to another crew's vehicle or shift.
     // A shift, when given, must be the driver's own AND cover the stated vehicle; with no shift we
     // fall back to a live (non-cancelled) assignment of that vehicle to this driver.
-    const link = await tx.client.query<{ ok: boolean }>(
-      input.shift_id
-        ? `SELECT true AS ok FROM app.shifts
-            WHERE id = $1 AND driver_id = $2 AND vehicle_id = $3`
-        : `SELECT true AS ok FROM app.assignments
-            WHERE driver_id = $2 AND vehicle_id = $3 AND status <> 'CANCELLED'
-              AND assigned_date >= (now() AT TIME ZONE 'Africa/Nairobi')::date - 1
-            LIMIT 1`,
-      input.shift_id ? [input.shift_id, driverId, input.vehicle_id] : [null, driverId, input.vehicle_id],
-    );
+    const link = input.shift_id
+      ? await tx.client.query<{ ok: boolean }>(
+          `SELECT true AS ok FROM app.shifts
+             WHERE id = $1 AND driver_id = $2 AND vehicle_id = $3`,
+          [input.shift_id, driverId, input.vehicle_id],
+        )
+      : await tx.client.query<{ ok: boolean }>(
+          `SELECT true AS ok FROM app.assignments
+             WHERE driver_id = $1 AND vehicle_id = $2 AND status <> 'CANCELLED'
+               AND assigned_date >= (now() AT TIME ZONE 'Africa/Nairobi')::date - 1
+             LIMIT 1`,
+          [driverId, input.vehicle_id],
+        );
     if (!link.rows[0]) {
       return err(new Forbidden("Vehicle is not assigned to you for this shift"));
     }

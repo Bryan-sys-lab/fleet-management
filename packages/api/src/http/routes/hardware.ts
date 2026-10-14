@@ -10,16 +10,7 @@
 // the SMS actually took effect, without waiting for a support call.
 
 import { Router, type Request, type Response } from "express";
-import {
-  ConflictError,
-  HardwarePairSchema,
-  type DbClient,
-  type IdempotencyService,
-  type PermissionCode,
-  type PoolLike,
-  type Principal,
-  type HardwareTrackerStatus,
-} from "@fleet/shared";
+import { ConflictError, HardwarePairSchema, err, ok, type DbClient, type HardwareTrackerStatus, type IdempotencyService, type PermissionCode, type PoolLike, type Principal } from "@fleet/shared";
 import { NotFound, violation } from "@fleet/shared";
 import { authenticate } from "../../middleware/authenticate";
 import { idempotency } from "../../middleware/idempotency";
@@ -149,7 +140,7 @@ export function createHardwareRouter(deps: HardwareRouterDeps): Router {
           [input.vehicleId],
         );
         const vehicle = target.rows[0];
-        if (!vehicle) return new NotFound("Vehicle not found") as never;
+        if (!vehicle) return err(new NotFound("Vehicle not found"));
 
         // Idempotent re-pairing (F8): if this exact IMEI is already bound to this vehicle, treat the
         // call as a Resend — re-issue the configuration SMS without touching the row. A *different*
@@ -222,7 +213,7 @@ export function createHardwareRouter(deps: HardwareRouterDeps): Router {
           }
         }
 
-        return {
+        return ok({
           status: 200,
           body: {
             success: true,
@@ -232,7 +223,7 @@ export function createHardwareRouter(deps: HardwareRouterDeps): Router {
             vehiclePlate: vehicle.license_plate,
           },
           resourceId: input.vehicleId,
-        } as never;
+        });
       }),
     ),
   );
@@ -259,12 +250,12 @@ export function createHardwareRouter(deps: HardwareRouterDeps): Router {
           [vehicleId],
         );
         const vehicle = target.rows[0];
-        if (!vehicle) return new NotFound("Vehicle not found") as never;
+        if (!vehicle) return err(new NotFound("Vehicle not found"));
 
         // Nothing bound: report success so a repeated unpair (e.g. after a failed earlier call)
         // is safe and the client can always converge to an unpaired state.
         if (!vehicle.tracker_imei) {
-          return {
+          return ok({
             status: 200,
             body: {
               success: true,
@@ -272,7 +263,7 @@ export function createHardwareRouter(deps: HardwareRouterDeps): Router {
               vehicleId,
               trackerImei: null,
             },
-          } as never;
+          });
         }
 
         await tx.client.query(
@@ -302,7 +293,7 @@ export function createHardwareRouter(deps: HardwareRouterDeps): Router {
           http_method: req.method,
         });
 
-        return {
+        return ok({
           status: 200,
           body: {
             success: true,
@@ -310,7 +301,7 @@ export function createHardwareRouter(deps: HardwareRouterDeps): Router {
             vehicleId,
             trackerImei: vehicle.tracker_imei,
           },
-        } as never;
+        });
       }),
     ),
   );

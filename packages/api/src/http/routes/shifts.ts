@@ -5,7 +5,7 @@
 
 import { Router, type Request, type Response } from "express";
 import { z } from "zod";
-import { Forbidden, NotFound, type IdempotencyService, type PermissionCode, type PoolLike, type Principal } from "@fleet/shared";
+import { Forbidden, NotFound, err, ok, type IdempotencyService, type PermissionCode, type PoolLike, type Principal } from "@fleet/shared";
 import { ClockInSchema, ClockOutSchema, VerifyShiftSchema } from "@fleet/shared";
 import { authenticate } from "../../middleware/authenticate";
 import { idempotency } from "../../middleware/idempotency";
@@ -55,7 +55,7 @@ export function createShiftRouter(deps: ShiftRouterDeps): Router {
         const input = parseBody(ClockInSchema, req);
         const svc = makeServices(tx.client, infra);
         const driver = await svc.drivers.findByUserId(principal.userId);
-        if (!driver) return new Forbidden() as never;
+        if (!driver) return err(new Forbidden());
         const result = await svc.shift.clockIn(tx, driver.id, input, {
           userId: principal.userId,
           email: principal.email,
@@ -74,7 +74,7 @@ export function createShiftRouter(deps: ShiftRouterDeps): Router {
             http_method: req.method,
           });
           // Wire contract is snake_case (openapi `/shifts/clock-in`).
-          return {
+          return ok({
             status: 201,
             body: {
               shift_id: result.value.shiftId,
@@ -82,9 +82,9 @@ export function createShiftRouter(deps: ShiftRouterDeps): Router {
               disclaimer: result.value.disclaimer,
             },
             resourceId: result.value.shiftId,
-          } as never;
+          });
         }
-        return result.error as never;
+        return err(result.error);
       }),
     ),
   );
@@ -101,7 +101,7 @@ export function createShiftRouter(deps: ShiftRouterDeps): Router {
         const input = parseBody(ClockOutSchema, req);
         const svc = makeServices(tx.client, infra);
         const driver = await svc.drivers.findByUserId(principal.userId);
-        if (!driver) return new Forbidden() as never;
+        if (!driver) return err(new Forbidden());
         const result = await svc.shift.clockOut(tx, driver.id, input, {
           userId: principal.userId,
           email: principal.email,
@@ -120,9 +120,9 @@ export function createShiftRouter(deps: ShiftRouterDeps): Router {
             http_method: req.method,
           });
           // Wire contract is snake_case (openapi `/shifts/clock-out`).
-          return { status: 200, body: { shift_id: result.value.shiftId } } as never;
+          return ok({ status: 200, body: { shift_id: result.value.shiftId } });
         }
-        return result.error as never;
+        return err(result.error);
       }),
     ),
   );
@@ -280,9 +280,9 @@ export function createShiftRouter(deps: ShiftRouterDeps): Router {
             reason: input.action,
           });
           // Wire contract is snake_case (openapi `/shifts/{id}/verify`).
-          return { status: 200, body: { shift_id: result.value.shiftId, status: result.value.status } } as never;
+          return ok({ status: 200, body: { shift_id: result.value.shiftId, status: result.value.status } });
         }
-        return result.error as never;
+        return err(result.error);
       }),
     ),
   );
@@ -317,9 +317,9 @@ export function createShiftRouter(deps: ShiftRouterDeps): Router {
             reason: input.reason ?? "Admin force-close (N6/C3.8)",
           });
           // Wire contract is snake_case (openapi `/shifts/{id}/force-close`).
-          return { status: 200, body: { shift_id: result.value.shiftId } } as never;
+          return ok({ status: 200, body: { shift_id: result.value.shiftId } });
         }
-        return result.error as never;
+        return err(result.error);
       }),
     ),
   );

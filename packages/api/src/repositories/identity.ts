@@ -323,7 +323,7 @@ export class DriverDeviceRepository extends BaseRepository<DriverDeviceRow> {
       `INSERT INTO app.driver_devices
          (user_id, device_id_hash, device_label, device_model, os_version, app_version,
           push_token, push_token_updated_at, last_seen_online_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, CASE WHEN $7 IS NULL THEN NULL ELSE now() END, now())
+       VALUES ($1, $2, $3, $4, $5, $6, $7, CASE WHEN $7::text IS NULL THEN NULL ELSE now() END, now())
        ON CONFLICT (user_id, device_id_hash) WHERE revoked_at IS NULL DO UPDATE
          SET device_label = COALESCE(EXCLUDED.device_label, app.driver_devices.device_label),
              device_model = COALESCE(EXCLUDED.device_model, app.driver_devices.device_model),

@@ -12,7 +12,7 @@
 
 import { Router, type Request, type Response } from "express";
 import { z } from "zod";
-import { Forbidden, type IdempotencyService, type PermissionCode, type PoolLike, type Principal } from "@fleet/shared";
+import { Forbidden, err, ok, type IdempotencyService, type PermissionCode, type PoolLike, type Principal } from "@fleet/shared";
 import { FuelCardQuerySchema, FuelCorrectionSchema, PhotoFirstRefuelSchema, VerifyPurchaseSchema } from "@fleet/shared";
 import { authenticate, principalOf } from "../../middleware/authenticate";
 import { idempotency } from "../../middleware/idempotency";
@@ -77,8 +77,8 @@ export function createFuelRouter(deps: FuelRouterDeps): Router {
           email: principal.email,
           roles: principal.roles,
         });
-        if (result.ok) return { status: 200, body: result.value } as never;
-        return result.error as never;
+        if (result.ok) return ok({ status: 200, body: result.value });
+        return err(result.error);
       }),
     ),
   );
@@ -99,8 +99,8 @@ export function createFuelRouter(deps: FuelRouterDeps): Router {
           { label: input.label, lastFour: input.last_four, provider: input.provider, isPooled: input.is_pooled, assignedVehicleId: input.assigned_vehicle_id ?? null },
           { userId: principal.userId, email: principal.email, roles: principal.roles },
         );
-        if (result.ok) return { status: 201, body: result.value, resourceId: result.value.fuelCardId } as never;
-        return result.error as never;
+        if (result.ok) return ok({ status: 201, body: result.value, resourceId: result.value.fuelCardId });
+        return err(result.error);
       }),
     ),
   );
@@ -189,8 +189,8 @@ export function createReconciliationRouter(deps: FuelRouterDeps): Router {
           },
           { userId: principal.userId, email: principal.email, roles: principal.roles },
         );
-        if (result.ok) return { status: 201, body: result.value, resourceId: result.value.statementId } as never;
-        return result.error as never;
+        if (result.ok) return ok({ status: 201, body: result.value, resourceId: result.value.statementId });
+        return err(result.error);
       }),
     ),
   );
@@ -223,14 +223,14 @@ export function createDriverFuelRouter(deps: FuelRouterDeps): Router {
         const input = parseBody(PhotoFirstRefuelSchema, req);
         const svc = makeServices(tx.client, infra);
         const driver = await svc.drivers.findByUserId(principal.userId);
-        if (!driver) return new Forbidden() as never;
+        if (!driver) return err(new Forbidden());
         const result = await svc.fuel.submitPhotoFirst(tx, driver.id, input, {
           userId: principal.userId,
           email: principal.email,
           roles: principal.roles,
         });
-        if (result.ok) return { status: 201, body: result.value, resourceId: result.value.fuelPurchaseId } as never;
-        return result.error as never;
+        if (result.ok) return ok({ status: 201, body: result.value, resourceId: result.value.fuelPurchaseId });
+        return err(result.error);
       }),
     ),
   );
@@ -247,14 +247,14 @@ export function createDriverFuelRouter(deps: FuelRouterDeps): Router {
         const input = parseBody(FuelCorrectionSchema, req);
         const svc = makeServices(tx.client, infra);
         const driver = await svc.drivers.findByUserId(principal.userId);
-        if (!driver) return new Forbidden() as never;
+        if (!driver) return err(new Forbidden());
         const result = await svc.fuel.applyCorrection(tx, driver.id, input, {
           userId: principal.userId,
           email: principal.email,
           roles: principal.roles,
         });
-        if (result.ok) return { status: 200, body: result.value } as never;
-        return result.error as never;
+        if (result.ok) return ok({ status: 200, body: result.value });
+        return err(result.error);
       }),
     ),
   );

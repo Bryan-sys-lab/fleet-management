@@ -7,17 +7,7 @@
 
 import { Router } from "express";
 import type { Redis as RedisClient } from "ioredis";
-import {
-  TraccarWebhookSchema,
-  PhonePointsSchema,
-  PHONE_POINTS,
-  normalizeTraccarWebhook,
-  normalizePhonePoint,
-  TRACCAR_POSITIONS_STREAM,
-  ValidationError,
-  ServiceUnavailable,
-  Forbidden,
-} from "@fleet/shared";
+import { Forbidden, PHONE_POINTS, PhonePointsSchema, ServiceUnavailable, TRACCAR_POSITIONS_STREAM, TraccarWebhookSchema, ValidationError, normalizePhonePoint, normalizeTraccarWebhook, ok } from "@fleet/shared";
 import { asyncHandler } from "../problem";
 import { parseBody } from "../validate";
 import { authenticate } from "../../middleware/authenticate";

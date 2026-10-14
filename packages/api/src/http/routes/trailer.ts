@@ -4,7 +4,7 @@
 // Principal via drivers.user_id.
 
 import { Router, type Request, type Response } from "express";
-import { Forbidden, type IdempotencyService, type PermissionCode, type PoolLike, type Principal } from "@fleet/shared";
+import { Forbidden, err, ok, type IdempotencyService, type PermissionCode, type PoolLike, type Principal } from "@fleet/shared";
 import { TrailerQuerySchema, TrailerSwapSchema } from "@fleet/shared";
 import { authenticate } from "../../middleware/authenticate";
 import { idempotency } from "../../middleware/idempotency";
@@ -43,14 +43,14 @@ export function createTrailerRouter(deps: TrailerRouterDeps): Router {
         const input = parseBody(TrailerSwapSchema, req);
         const svc = makeServices(tx.client, infra);
         const driver = await svc.drivers.findByUserId(principal.userId);
-        if (!driver) return new Forbidden() as never;
+        if (!driver) return err(new Forbidden());
         const result = await svc.trailer.swap(tx, driver.id, input, {
           userId: principal.userId,
           email: principal.email,
           roles: principal.roles,
         });
         if (result.ok) {
-          return {
+          return ok({
             status: 201,
             body: {
               trailer_assignment_id: result.value.trailerAssignmentId,
@@ -58,9 +58,9 @@ export function createTrailerRouter(deps: TrailerRouterDeps): Router {
               created_trailer_id: result.value.createdTrailerId,
             },
             resourceId: result.value.trailerAssignmentId ?? undefined,
-          } as never;
+          });
         }
-        return result.error as never;
+        return err(result.error);
       }),
     ),
   );

@@ -9,14 +9,7 @@
 // GET would otherwise shadow nothing here (the sub-path segment `/issues` makes them disjoint).
 
 import { Router, type Request, type Response } from "express";
-import {
-  Forbidden,
-  VehicleIssueCreateSchema,
-  type IdempotencyService,
-  type PermissionCode,
-  type PoolLike,
-  type Principal,
-} from "@fleet/shared";
+import { Forbidden, VehicleIssueCreateSchema, err, ok, type IdempotencyService, type PermissionCode, type PoolLike, type Principal } from "@fleet/shared";
 import { authenticate } from "../../middleware/authenticate";
 import { idempotency } from "../../middleware/idempotency";
 import { requirePermission } from "../../middleware/requirePermission";
@@ -57,10 +50,10 @@ export function createVehicleIssueRouter(deps: VehicleIssueRouterDeps): Router {
         // The reporter is always the calling driver — never a body field, so one driver can never
         // file a report in another driver's name (06 §2).
         const driver = await svc.drivers.findByUserId(principal.userId);
-        if (!driver) return new Forbidden("Only a driver can report a vehicle issue") as never;
+        if (!driver) return err(new Forbidden("Only a driver can report a vehicle issue"));
 
         const result = await svc.vehicleIssue.report(tx, req.params.vehicleId!, driver.id, input);
-        if (!result.ok) return result.error as never;
+        if (!result.ok) return err(result.error);
 
         tx.audit({
           action: "CREATE",
@@ -76,7 +69,7 @@ export function createVehicleIssueRouter(deps: VehicleIssueRouterDeps): Router {
           endpoint: req.path,
           http_method: req.method,
         });
-        return { status: 201, body: result.value, resourceId: result.value.issue_id } as never;
+        return ok({ status: 201, body: result.value, resourceId: result.value.issue_id });
       }),
     ),
   );

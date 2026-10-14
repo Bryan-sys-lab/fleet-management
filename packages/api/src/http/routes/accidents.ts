@@ -5,7 +5,7 @@
 // use a pooled client. Driver id is resolved from the Principal via drivers.user_id.
 
 import { Router, type Request, type Response } from "express";
-import { Forbidden, NotFound, type IdempotencyService, type PermissionCode, type PoolLike, type Principal } from "@fleet/shared";
+import { Forbidden, NotFound, err, ok, type IdempotencyService, type PermissionCode, type PoolLike, type Principal } from "@fleet/shared";
 import { AccidentCreateSchema, AccidentMediaSchema, MaydaySchema } from "@fleet/shared";
 import { authenticate } from "../../middleware/authenticate";
 import { idempotency } from "../../middleware/idempotency";
@@ -46,7 +46,7 @@ export function createAccidentRouter(deps: AccidentRouterDeps): Router {
         const input = parseBody(MaydaySchema, req);
         const svc = makeServices(tx.client, infra);
         const driver = await svc.drivers.findByUserId(principal.userId);
-        if (!driver) return new Forbidden() as never;
+        if (!driver) return err(new Forbidden());
         const result = await svc.accident.mayday(tx, driver.id, input, {
           userId: principal.userId,
           email: principal.email,
@@ -55,13 +55,13 @@ export function createAccidentRouter(deps: AccidentRouterDeps): Router {
         if (result.ok) {
           // Wire contract is snake_case (openapi `/accidents/mayday` → accident_id).
           const { accidentId, escalatedAt } = result.value;
-          return {
+          return ok({
             status: 201,
             body: { accident_id: accidentId, escalated_at: escalatedAt ?? null },
             resourceId: accidentId,
-          } as never;
+          });
         }
-        return result.error as never;
+        return err(result.error);
       }),
     ),
   );
@@ -78,7 +78,7 @@ export function createAccidentRouter(deps: AccidentRouterDeps): Router {
         const input = parseBody(AccidentCreateSchema, req);
         const svc = makeServices(tx.client, infra);
         const driver = await svc.drivers.findByUserId(principal.userId);
-        if (!driver) return new Forbidden() as never;
+        if (!driver) return err(new Forbidden());
         const result = await svc.accident.create(tx, driver.id, input, {
           userId: principal.userId,
           email: principal.email,
@@ -87,9 +87,9 @@ export function createAccidentRouter(deps: AccidentRouterDeps): Router {
         if (result.ok) {
           // Wire contract is snake_case (openapi `/accidents` → accident_id).
           const { accidentId } = result.value;
-          return { status: 201, body: { accident_id: accidentId }, resourceId: accidentId } as never;
+          return ok({ status: 201, body: { accident_id: accidentId }, resourceId: accidentId });
         }
-        return result.error as never;
+        return err(result.error);
       }),
     ),
   );
@@ -110,8 +110,8 @@ export function createAccidentRouter(deps: AccidentRouterDeps): Router {
           email: principal.email,
           roles: principal.roles,
         });
-        if (result.ok) return { status: 204, body: {} } as never;
-        return result.error as never;
+        if (result.ok) return ok({ status: 204, body: {} });
+        return err(result.error);
       }),
     ),
   );
@@ -185,9 +185,9 @@ export function createAccidentRouter(deps: AccidentRouterDeps): Router {
         });
         if (result.ok) {
           const { accidentId, acknowledgedAt } = result.value;
-          return { status: 200, body: { accident_id: accidentId, acknowledged_at: acknowledgedAt } } as never;
+          return ok({ status: 200, body: { accident_id: accidentId, acknowledged_at: acknowledgedAt } });
         }
-        return result.error as never;
+        return err(result.error);
       }),
     ),
   );

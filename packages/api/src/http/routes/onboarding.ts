@@ -11,14 +11,7 @@
 
 import { Router, type Request, type Response } from "express";
 import { z } from "zod";
-import {
-  Forbidden,
-  NotFound,
-  type IdempotencyService,
-  type PermissionCode,
-  type PoolLike,
-  type Principal,
-} from "@fleet/shared";
+import { Forbidden, NotFound, err, ok, type IdempotencyService, type PermissionCode, type PoolLike, type Principal } from "@fleet/shared";
 import { authenticate } from "../../middleware/authenticate";
 import { idempotency } from "../../middleware/idempotency";
 import { requirePermission } from "../../middleware/requirePermission";
@@ -76,10 +69,10 @@ export function createOnboardingRouter(deps: OnboardingRouterDeps): Router {
         const principal = ctx.principal as Principal;
         const svc = makeServices(tx.client, infra);
         const driver = await svc.drivers.getByUserId(principal.userId);
-        if (!driver) return new NotFound("No driver profile for this user") as never;
+        if (!driver) return err(new NotFound("No driver profile for this user"));
         const result = await svc.onboarding.getOrCreate(driver.id);
-        if (!result.ok) return result.error as never;
-        return { status: 200, body: result.value } as never;
+        if (!result.ok) return err(result.error);
+        return ok({ status: 200, body: result.value });
       }),
     ),
   );
@@ -96,9 +89,9 @@ export function createOnboardingRouter(deps: OnboardingRouterDeps): Router {
         const input = parseBody(OnboardingProfileSchema, req);
         const svc = makeServices(tx.client, infra);
         const driver = await svc.drivers.getByUserId(principal.userId);
-        if (!driver) return new NotFound("No driver profile for this user") as never;
+        if (!driver) return err(new NotFound("No driver profile for this user"));
         const result = await svc.onboarding.saveProfile(driver.id, input);
-        if (!result.ok) return result.error as never;
+        if (!result.ok) return err(result.error);
         tx.audit({
           action: "UPDATE",
           entity_table: "app.driver_onboarding",
@@ -112,7 +105,7 @@ export function createOnboardingRouter(deps: OnboardingRouterDeps): Router {
           endpoint: req.path,
           http_method: req.method,
         });
-        return { status: 200, body: result.value, resourceId: result.value.id } as never;
+        return ok({ status: 200, body: result.value, resourceId: result.value.id });
       }),
     ),
   );
@@ -129,9 +122,9 @@ export function createOnboardingRouter(deps: OnboardingRouterDeps): Router {
         const input = parseBody(BackgroundCheckSchema, req);
         const svc = makeServices(tx.client, infra);
         const driver = await svc.drivers.getByUserId(principal.userId);
-        if (!driver) return new NotFound("No driver profile for this user") as never;
+        if (!driver) return err(new NotFound("No driver profile for this user"));
         const result = await svc.onboarding.submitBackgroundCheck(driver.id, input);
-        if (!result.ok) return result.error as never;
+        if (!result.ok) return err(result.error);
         // The SSN ciphertext is never echoed into the audit trail; only the consent decision is.
         tx.audit({
           action: "CREATE",
@@ -145,7 +138,7 @@ export function createOnboardingRouter(deps: OnboardingRouterDeps): Router {
           endpoint: req.path,
           http_method: req.method,
         });
-        return { status: 200, body: result.value, resourceId: result.value.onboarding_id } as never;
+        return ok({ status: 200, body: result.value, resourceId: result.value.onboarding_id });
       }),
     ),
   );

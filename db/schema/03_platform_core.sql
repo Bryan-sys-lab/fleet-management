@@ -119,8 +119,14 @@ CREATE TRIGGER system_config_no_hard_delete
 -- request_hash guards against a client reusing a key with a different body,
 -- which must be rejected with 422 rather than silently returning a stale result.
 -- -----------------------------------------------------------------------------
+-- The subject is a UUID in every case (C5.1): `principal.userId` when the caller is
+-- authenticated, and a deterministic UUID derived from the caller's identifier
+-- (email / IP) when it is not — POST /auth/login must claim a key before a principal
+-- exists. It is deliberately not a foreign key: an unauthenticated subject has no
+-- app.users row to reference. Users are only ever soft-deleted (C6.5), so the old
+-- ON DELETE CASCADE never fired anyway.
 CREATE TABLE app.idempotency_keys (
-    user_id         uuid NOT NULL REFERENCES app.users(id) ON DELETE CASCADE,
+    user_id         uuid NOT NULL,
     idempotency_key uuid NOT NULL,
     endpoint        text NOT NULL,
     request_hash    text NOT NULL,

@@ -6,14 +6,7 @@
 
 import { Router, type Request, type Response } from "express";
 import { z } from "zod";
-import {
-  isErr,
-  ok,
-  type IdempotencyService,
-  type PermissionCode,
-  type PoolLike,
-  type Principal,
-} from "@fleet/shared";
+import { err, isErr, ok, type IdempotencyService, type PermissionCode, type PoolLike, type Principal } from "@fleet/shared";
 import { authenticate } from "../../middleware/authenticate";
 import { idempotency } from "../../middleware/idempotency";
 import { requirePermission } from "../../middleware/requirePermission";
@@ -141,7 +134,7 @@ export function createAuthRouter(deps: AuthRouterDeps): Router {
             http_method: req.method,
             reason: "invalid_credentials",
           });
-          return login.error as never;
+          return err(login.error);
         }
 
         const value = login.value;
@@ -177,7 +170,7 @@ export function createAuthRouter(deps: AuthRouterDeps): Router {
         const input = parseBody(MfaVerifySchema, req);
         const svc = makeServices(tx.client, infra);
         const result = await svc.mfa.verify(input.mfa_challenge_token, input.code);
-        if (isErr(result)) return result.error as never;
+        if (isErr(result)) return err(result.error);
         const s = result.value.session;
         tx.audit({
           action: "LOGIN",
@@ -204,7 +197,7 @@ export function createAuthRouter(deps: AuthRouterDeps): Router {
         const input = parseBody(RefreshSchema, req);
         const svc = makeServices(tx.client, infra);
         const result = await svc.auth.refresh(input.refresh_token);
-        if (isErr(result)) return result.error as never;
+        if (isErr(result)) return err(result.error);
         return ok({ status: 200, body: sessionBody(result.value), resourceId: result.value.sessionId });
       }),
     ),
@@ -279,7 +272,7 @@ export function createAuthRouter(deps: AuthRouterDeps): Router {
           input.current_password,
           input.new_password,
         );
-        if (isErr(result)) return result.error as never;
+        if (isErr(result)) return err(result.error);
         tx.audit({
           action: "CONFIG_CHANGE",
           entity_table: "app.users",
@@ -309,7 +302,7 @@ export function createAuthRouter(deps: AuthRouterDeps): Router {
         parseBody(MfaEnrollSchema, req);
         const svc = makeServices(tx.client, infra);
         const result = await svc.mfa.enroll(principal.userId);
-        if (isErr(result)) return result.error as never;
+        if (isErr(result)) return err(result.error);
         tx.audit({
           action: "CONFIG_CHANGE",
           entity_table: "app.users",
@@ -344,7 +337,7 @@ export function createAuthRouter(deps: AuthRouterDeps): Router {
           appVersion: input.app_version ?? null,
           pushToken: input.push_token ?? null,
         });
-        if (isErr(result)) return result.error as never;
+        if (isErr(result)) return err(result.error);
         return ok({ status: 200, body: { device_id: result.value.deviceId, push_token: result.value.pushToken } });
       }),
     ),
@@ -360,7 +353,7 @@ export function createAuthRouter(deps: AuthRouterDeps): Router {
         parseBody(SetPinSchema, req); // PIN never leaves the device; the server only flips the flag (B12)
         const svc = makeServices(tx.client, infra);
         const result = await svc.device.setPin(principal.userId, principal.deviceIdHash ?? "");
-        if (isErr(result)) return result.error as never;
+        if (isErr(result)) return err(result.error);
         return ok({ status: 200, body: { pin_set: true } });
       }),
     ),
@@ -377,7 +370,7 @@ export function createAuthRouter(deps: AuthRouterDeps): Router {
           userId: principal.userId,
           deviceIdHash: principal.deviceIdHash ?? "",
         });
-        if (isErr(result)) return result.error as never;
+        if (isErr(result)) return err(result.error);
         return ok({
           status: 200,
           body: {
@@ -401,7 +394,7 @@ export function createAuthRouter(deps: AuthRouterDeps): Router {
         const input = parseBody(DeviceRevokeSchema, req);
         const svc = makeServices(tx.client, infra);
         const result = await svc.device.revoke(input.device_id_hash, input.device_id_hash, principal.userId);
-        if (isErr(result)) return result.error as never;
+        if (isErr(result)) return err(result.error);
         tx.audit({
           action: "DEVICE_REVOKE",
           entity_table: "app.driver_devices",
@@ -434,7 +427,7 @@ export function createAuthRouter(deps: AuthRouterDeps): Router {
             userAgent: ua(req),
             deviceIdHash: principal.deviceIdHash ?? null,
           });
-          if (isErr(result)) return result.error as never;
+          if (isErr(result)) return err(result.error);
           tx.audit({
             action: "CONFIG_CHANGE",
             entity_table: "app.user_consents",
@@ -448,7 +441,7 @@ export function createAuthRouter(deps: AuthRouterDeps): Router {
           return ok({ status: 200, body: { consent_id: result.value.consentId, accepted: true } });
         }
         const result = await svc.consent.revoke(principal.userId, input.consent_type);
-        if (isErr(result)) return result.error as never;
+        if (isErr(result)) return err(result.error);
         return ok({ status: 200, body: { accepted: false, revoked: result.value.revoked } });
       }),
     ),
@@ -478,7 +471,7 @@ export function createAuthRouter(deps: AuthRouterDeps): Router {
           },
           tx.client,
         );
-        if (isErr(result)) return result.error as never;
+        if (isErr(result)) return err(result.error);
 
         const { userId, tenantId } = result.value;
         // The session is issued after the membership + role rows exist, so `resolveIdentity` signs
@@ -488,7 +481,7 @@ export function createAuthRouter(deps: AuthRouterDeps): Router {
           ipAddress: ip(req),
           userAgent: ua(req),
         });
-        if (isErr(session)) return session.error as never;
+        if (isErr(session)) return err(session.error);
 
         tx.audit({
           action: "TENANT_CREATE",
@@ -534,11 +527,11 @@ export function createAuthRouter(deps: AuthRouterDeps): Router {
         const input = parseBody(AcceptInviteSchema, req);
         const svc = makeServices(tx.client, infra);
         const result = await svc.tenancy.acceptInvite(input);
-        if (!result.ok) return result.error as never;
+        if (!result.ok) return err(result.error);
         // The inviter's tenant becomes the user's primary tenant immediately, so the issued session
         // is scoped to it without a second round-trip.
         const session = await svc.session.issue({ userId: result.value.userId });
-        if (isErr(session)) return session.error as never;
+        if (isErr(session)) return err(session.error);
         const identity = session.value;
         tx.audit({
           action: "MEMBERSHIP_GRANT",
@@ -549,10 +542,10 @@ export function createAuthRouter(deps: AuthRouterDeps): Router {
           endpoint: req.path,
           http_method: req.method,
         });
-        return {
+        return ok({
           status: 200,
           body: sessionBody(identity),
-        } as never;
+        });
       }),
     ),
   );
@@ -573,7 +566,7 @@ export function createAuthRouter(deps: AuthRouterDeps): Router {
         const input = parseBody(ResetRequestSchema, req);
         const svc = makeServices(tx.client, infra);
         const result = await svc.reset.request(input.email_or_phone);
-        if (isErr(result)) return result.error as never;
+        if (isErr(result)) return err(result.error);
         tx.audit({
           action: "PASSWORD_RESET_REQUESTED",
           entity_table: "app.password_reset_codes",
@@ -614,7 +607,7 @@ export function createAuthRouter(deps: AuthRouterDeps): Router {
           principal.roles,
           principal.tenantId,
         );
-        if (isErr(result)) return result.error as never;
+        if (isErr(result)) return err(result.error);
         tx.audit({
           action: "PASSWORD_RESET_APPROVED",
           entity_table: "app.password_reset_codes",
@@ -643,7 +636,7 @@ export function createAuthRouter(deps: AuthRouterDeps): Router {
         const input = parseBody(ResetCompleteSchema, req);
         const svc = makeServices(tx.client, infra);
         const result = await svc.reset.complete(req.params.resetId ?? "", input.code, input.new_password);
-        if (isErr(result)) return result.error as never;
+        if (isErr(result)) return err(result.error);
         tx.audit({
           action: "PASSWORD_RESET_COMPLETED",
           entity_table: "app.password_reset_codes",

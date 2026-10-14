@@ -195,8 +195,14 @@ CREATE TABLE app.fuel_purchases (
         CHECK (NOT (admin_verified = true AND rejected_at IS NOT NULL)),
     CONSTRAINT fuel_purchases_clearance_requires_verification
         CHECK (cleared_for_payment_at IS NULL OR admin_verified = true),
+    -- B3 gauge evidence pairing. A CHECK must evaluate to TRUE, and `NULL IS DISTINCT FROM NULL`
+    -- is FALSE — so the literal "IS DISTINCT FROM" form made every purchase that sets neither
+    -- gauge record (the whole photo-first / A1.4 flow) violate the constraint. NULLs mean
+    -- "not supplied" and must be allowed; only both-set-and-equal is a real violation.
     CONSTRAINT fuel_purchases_distinct_gauge_records
-        CHECK (before_fuel_record_id IS DISTINCT FROM after_fuel_record_id)
+        CHECK (before_fuel_record_id IS NULL
+            OR after_fuel_record_id IS NULL
+            OR before_fuel_record_id <> after_fuel_record_id)
 );
 
 CREATE INDEX fuel_purchases_vehicle_time_idx ON app.fuel_purchases (vehicle_id, purchased_at DESC);

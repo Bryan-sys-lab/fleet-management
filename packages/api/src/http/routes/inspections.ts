@@ -5,7 +5,7 @@
 // resolved from the Principal via drivers.user_id.
 
 import { Router, type Request, type Response } from "express";
-import { Forbidden, NotFound, type IdempotencyService, type PermissionCode, type PoolLike, type Principal } from "@fleet/shared";
+import { Forbidden, NotFound, err, ok, type IdempotencyService, type PermissionCode, type PoolLike, type Principal } from "@fleet/shared";
 import { InspectionSubmitSchema } from "@fleet/shared";
 import { authenticate } from "../../middleware/authenticate";
 import { idempotency } from "../../middleware/idempotency";
@@ -45,20 +45,24 @@ export function createInspectionRouter(deps: InspectionRouterDeps): Router {
         const input = parseBody(InspectionSubmitSchema, req);
         const svc = makeServices(tx.client, infra);
         const driver = await svc.drivers.findByUserId(principal.userId);
-        if (!driver) return new Forbidden() as never;
+        if (!driver) return err(new Forbidden("No driver profile for this user"));
         const result = await svc.inspection.submit(tx, driver.id, input, {
           userId: principal.userId,
           email: principal.email,
           roles: principal.roles,
         });
-        if (result.ok)
-  // Wire contract is snake_case (openapi `/inspections` → inspection_id, block_shift).
-  return {
-    status: 201,
-    body: { inspection_id: result.value.inspectionId, block_shift: result.value.blockShift },
-    resourceId: result.value.inspectionId,
-  } as never;
-        return result.error as never;
+        // executeWrite only understands Result<WriteOutcome>. Returning a bare AppError or a bare
+        // outcome here leaves `result.ok` undefined, so isErr() misfires and the write path tries to
+        // read `.toProblem()` off undefined.
+        if (result.ok) {
+          // Wire contract is snake_case (openapi `/inspections` → inspection_id, block_shift).
+          return ok({
+            status: 201,
+            body: { inspection_id: result.value.inspectionId, block_shift: result.value.blockShift },
+            resourceId: result.value.inspectionId,
+          });
+        }
+        return err(result.error);
       }),
     ),
   );

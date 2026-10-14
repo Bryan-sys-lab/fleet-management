@@ -11,13 +11,7 @@
 
 import { Router, type Request, type Response } from "express";
 import { z } from "zod";
-import {
-  Forbidden,
-  type IdempotencyService,
-  type PermissionCode,
-  type PoolLike,
-  type Principal,
-} from "@fleet/shared";
+import { Forbidden, err, ok, type IdempotencyService, type PermissionCode, type PoolLike, type Principal } from "@fleet/shared";
 import { authenticate } from "../../middleware/authenticate";
 import { idempotency } from "../../middleware/idempotency";
 import { requirePermission } from "../../middleware/requirePermission";
@@ -109,9 +103,9 @@ export function createTrainingRouter(deps: TrainingRouterDeps): Router {
         const svc = makeServices(tx.client, infra);
         // Only a driver profile can hold an enrolment; an admin without one cannot self-complete.
         const driver = await svc.drivers.findByUserId(principal.userId);
-        if (!driver) return new Forbidden("Only a driver can complete a training lesson") as never;
+        if (!driver) return err(new Forbidden("Only a driver can complete a training lesson"));
         const result = await svc.training.completeLesson(tx, driver.id, req.params.id!, input);
-        if (!result.ok) return result.error as never;
+        if (!result.ok) return err(result.error);
         tx.audit({
           action: "UPDATE",
           entity_table: "app.training_enrollments",
@@ -124,7 +118,7 @@ export function createTrainingRouter(deps: TrainingRouterDeps): Router {
           endpoint: req.path,
           http_method: req.method,
         });
-        return { status: 200, body: result.value, resourceId: result.value.id } as never;
+        return ok({ status: 200, body: result.value, resourceId: result.value.id });
       }),
     ),
   );

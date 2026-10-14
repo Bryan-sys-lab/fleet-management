@@ -8,7 +8,7 @@
 
 import { Router, type Request, type Response } from "express";
 import { z } from "zod";
-import { type IdempotencyService, type PermissionCode, type PoolLike, type Principal } from "@fleet/shared";
+import { err, ok, type IdempotencyService, type PermissionCode, type PoolLike, type Principal } from "@fleet/shared";
 import { authenticate } from "../../middleware/authenticate";
 import { idempotency } from "../../middleware/idempotency";
 import { requirePermission } from "../../middleware/requirePermission";
@@ -94,7 +94,7 @@ export function createMaintenanceRouter(deps: MaintenanceRouterDeps): Router {
         const input = parseBody(WorkOrderCreateSchema, req);
         const svc = makeServices(tx.client, infra);
         const result = await svc.maintenance.createWorkOrder(tx, input, { userId: principal.userId });
-        if (!result.ok) return result.error as never;
+        if (!result.ok) return err(result.error);
         tx.audit({
           action: "CREATE",
           entity_table: "app.maintenance_records",
@@ -107,7 +107,7 @@ export function createMaintenanceRouter(deps: MaintenanceRouterDeps): Router {
           endpoint: req.path,
           http_method: req.method,
         });
-        return { status: 201, body: result.value, resourceId: result.value.id } as never;
+        return ok({ status: 201, body: result.value, resourceId: result.value.id });
       }),
     ),
   );

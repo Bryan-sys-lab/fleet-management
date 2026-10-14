@@ -21,6 +21,7 @@ import {
   type Tx,
 } from "@fleet/shared";
 import { transaction } from "@fleet/db";
+import { sha256Hex } from "../security/crypto";
 
 export interface WriteDeps {
   pool: PoolLike;
@@ -50,12 +51,30 @@ export interface WriteOutcome<T> {
 
 export type WriteHandler<T> = (tx: Tx, ctx: WriteContext) => Promise<Result<WriteOutcome<T>>>;
 
+/**
+ * The idempotency column is `uuid NOT NULL`, so the subject must always be a UUID.
+ *
+ * Authenticated requests scope their claim to `principal.userId`. Unauthenticated
+ * state-changing routes (notably POST /auth/login, which carries an email but no
+ * principal yet) previously fell through to the raw email string, which Postgres
+ * rejected with `invalid input syntax for type uuid` — so every email login failed
+ * with a 500 before the credentials were ever checked. Those subjects now derive a
+ * deterministic UUID from their identifier, which keeps (subject, key) unique:
+ * two different emails get two distinct scopes, and the same email always maps to
+ * the same UUID so a replayed key still replays.
+ */
 export function writeSubject(req: Request): string {
   const principal = (req as { principal?: Principal }).principal;
   if (principal) return principal.userId;
   const email = (req.body as { email?: unknown } | undefined)?.email;
-  if (typeof email === "string" && email.length > 0) return email;
-  return req.ip ?? "unknown";
+  const anon = typeof email === "string" && email.length > 0 ? `email:${email}` : `ip:${req.ip ?? "unknown"}`;
+  return uuidFromIdentifier(anon);
+}
+
+/** Derive a stable, syntactically valid UUID (v5-shaped) from an arbitrary identifier. */
+function uuidFromIdentifier(identifier: string): string {
+  const hex = sha256Hex(identifier);
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20, 32)}`;
 }
 
 /**

@@ -250,9 +250,26 @@ describe("requestContext", () => {
 });
 
 describe("writeSubject", () => {
-  it("prefers the principal userId, then email, then ip", () => {
-    expect(writeSubject({ principal: { userId: "u1" } } as any)).toBe("u1");
-    expect(writeSubject({ body: { email: "a@b.c" } } as any)).toBe("a@b.c");
-    expect(writeSubject({ ip: "1.2.3.4" } as any)).toBe("1.2.3.4");
+  const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+
+  it("prefers the principal userId when authenticated", () => {
+    expect(writeSubject({ principal: { userId: "11111111-1111-4111-8111-111111111111" } } as any))
+      .toBe("11111111-1111-4111-8111-111111111111");
+  });
+
+  it("derives a stable UUID for unauthenticated subjects, never the raw identifier", () => {
+    // app.idempotency_keys.user_id is `uuid NOT NULL`, so an email or IP cannot be stored verbatim.
+    const byEmail = writeSubject({ body: { email: "a@b.c" } } as any);
+    const byIp = writeSubject({ ip: "1.2.3.4" } as any);
+
+    expect(byEmail).toMatch(UUID_RE);
+    expect(byIp).toMatch(UUID_RE);
+    expect(byEmail).not.toContain("a@b.c");
+
+    // Deterministic: the same identifier always maps to the same UUID so a replayed key still
+    // replays, while two different identifiers get two different scopes.
+    expect(writeSubject({ body: { email: "a@b.c" } } as any)).toBe(byEmail);
+    expect(writeSubject({ ip: "1.2.3.4" } as any)).toBe(byIp);
+    expect(byEmail).not.toBe(byIp);
   });
 });

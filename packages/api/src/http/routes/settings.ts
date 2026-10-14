@@ -6,7 +6,7 @@
 
 import { Router, type Request, type Response } from "express";
 import { z } from "zod";
-import { type IdempotencyService, type PermissionCode, type PoolLike, type Principal } from "@fleet/shared";
+import { err, ok, type IdempotencyService, type PermissionCode, type PoolLike, type Principal } from "@fleet/shared";
 import { authenticate } from "../../middleware/authenticate";
 import { idempotency } from "../../middleware/idempotency";
 import { requirePermission } from "../../middleware/requirePermission";
@@ -79,7 +79,7 @@ export function createSettingsRouter(deps: SettingsRouterDeps): Router {
         // Read the prior value first so the audit entry records what actually changed.
         const before = await svc.settingsRepo.findByKey(input.key);
         const result = await svc.settings.updateTrigger(tx, input, { userId: principal.userId });
-        if (!result.ok) return result.error as never;
+        if (!result.ok) return err(result.error);
         tx.audit({
           action: "UPDATE",
           entity_table: "app.system_config",
@@ -94,7 +94,7 @@ export function createSettingsRouter(deps: SettingsRouterDeps): Router {
           endpoint: req.path,
           http_method: req.method,
         });
-        return { status: 200, body: result.value, resourceId: result.value.key } as never;
+        return ok({ status: 200, body: result.value, resourceId: result.value.key });
       }),
     ),
   );

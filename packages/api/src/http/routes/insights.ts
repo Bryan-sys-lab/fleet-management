@@ -8,7 +8,7 @@
 
 import { Router, type Request, type Response } from "express";
 import { z } from "zod";
-import { type IdempotencyService, type PermissionCode, type PoolLike, type Principal } from "@fleet/shared";
+import { err, ok, type IdempotencyService, type PermissionCode, type PoolLike, type Principal } from "@fleet/shared";
 import { authenticate } from "../../middleware/authenticate";
 import { idempotency } from "../../middleware/idempotency";
 import { requirePermission } from "../../middleware/requirePermission";
@@ -160,7 +160,7 @@ export function createInsightsRouter(deps: InsightsRouterDeps): Router {
         const svc = makeServices(tx.client, infra);
         const before = await svc.document.getDocument(req.params.id!);
         const result = await svc.document.setRenewalNote(req.params.id!, input.note);
-        if (!result.ok) return result.error as never;
+        if (!result.ok) return err(result.error);
         tx.audit({
           action: "UPDATE",
           entity_table: "app.asset_documents",
@@ -176,7 +176,7 @@ export function createInsightsRouter(deps: InsightsRouterDeps): Router {
           http_method: req.method,
           reason: "DOCUMENT_RENEWAL_NOTE",
         });
-        return { status: 200, body: result.value, resourceId: result.value.document_id } as never;
+        return ok({ status: 200, body: result.value, resourceId: result.value.document_id });
       }),
     ),
   );
