@@ -1,0 +1,117 @@
+import 'package:flutter/material.dart';
+import '../tokens.dart';
+import 'text.dart';
+
+/// Card: surface fill + hairline. Elevation is a tone step, never a shadow.
+/// Selected state changes the fill, not a decorative border.
+class HelixCard extends StatelessWidget {
+  const HelixCard({
+    super.key,
+    required this.child,
+    this.selected = false,
+    this.onTap,
+    this.padding = AppSpace.s4,
+    this.semanticsLabel,
+  });
+
+  final Widget child;
+  final bool selected;
+  final VoidCallback? onTap;
+  final double padding;
+  final String? semanticsLabel;
+
+  @override
+  Widget build(BuildContext context) {
+    final content = Semantics(
+      label: semanticsLabel,
+      child: Container(
+        width: double.infinity,
+        padding: EdgeInsets.all(padding),
+        decoration: BoxDecoration(
+          color: selected ? AppColors.accentQuiet : AppColors.surface,
+          border: Border.all(color: AppColors.line),
+          borderRadius: BorderRadius.circular(AppRadius.card),
+        ),
+        child: child,
+      ),
+    );
+    if (onTap == null) return content;
+    return GestureDetector(onTap: onTap, child: content);
+  }
+}
+
+/// Grouped section with a lead-weight header and hairline separators.
+class Section extends StatelessWidget {
+  const Section({
+    super.key,
+    required this.title,
+    this.subtitle,
+    required this.children,
+    this.trailing,
+  });
+
+  final String title;
+  final String? subtitle;
+  final List<Widget> children;
+  final Widget? trailing;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Expanded(child: HelixText(title, style: TypeScale.lead(AppColors.text))),
+            ?trailing,
+          ],
+        ),
+        if (subtitle != null) ...[
+          const SizedBox(height: AppSpace.s1),
+          HelixText(subtitle!, style: TypeScale.caption(AppColors.textSecondary)),
+        ],
+        const SizedBox(height: AppSpace.s3),
+        Container(
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            border: Border.all(color: AppColors.line),
+            borderRadius: BorderRadius.circular(AppRadius.card),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              for (var i = 0; i < children.length; i++) ...[
+                if (i > 0) const Divider(height: 1, color: AppColors.line),
+                children[i],
+              ],
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Key-value data row with tabular mono numerals, right-aligned.
+class KeyValueRow extends StatelessWidget {
+  const KeyValueRow({super.key, required this.label, required this.value, this.mono = true});
+
+  final String label;
+  final String value;
+  final bool mono;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: AppSpace.s2),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(child: HelixText(label, style: TypeScale.caption(AppColors.textSecondary))),
+          const SizedBox(width: AppSpace.s3),
+          HelixText(value, style: mono ? TypeScale.mono(AppColors.text) : TypeScale.body(AppColors.text)),
+        ],
+      ),
+    );
+  }
+}

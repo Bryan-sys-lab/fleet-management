@@ -1,0 +1,105 @@
+import 'package:flutter/material.dart';
+import '../tokens.dart';
+
+/// All app text goes through here — the 1.3× scale clamp and the type scale are
+/// enforced in one place (guard-carried from the Expo design system).
+class HelixText extends StatelessWidget {
+  const HelixText(
+    this.text, {
+    super.key,
+    this.style,
+    this.maxLines,
+    this.overflow,
+    this.semanticsLabel,
+    this.textAlign,
+  });
+
+  final String text;
+  final TextStyle? style;
+  final int? maxLines;
+  final TextOverflow? overflow;
+  final String? semanticsLabel;
+  final TextAlign? textAlign;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      label: semanticsLabel,
+      child: Text(
+        text,
+        style: style,
+        maxLines: maxLines,
+        overflow: overflow ?? (maxLines == null ? TextOverflow.visible : TextOverflow.ellipsis),
+        textAlign: textAlign,
+        textScaler: MediaQuery.textScalerOf(context).clamp(
+          minScaleFactor: 1.0,
+          maxScaleFactor: AppType.maxTextScale,
+        ),
+      ),
+    );
+  }
+}
+
+/// Convenience styles bound to the phone scale (the base). Admin-scale
+/// screens use HelixText with explicit sizes from their AppScale.
+class TypeScale {
+  TypeScale._();
+
+  static TextStyle display(Color c) => TextStyle(
+        fontFamily: AppType.fontDisplay,
+        fontWeight: FontWeight.w700,
+        fontSize: AppType.displayPhone,
+        height: 1.1,
+        color: c,
+      );
+  static TextStyle title(Color c) => TextStyle(
+        fontFamily: AppType.fontDisplay,
+        fontWeight: FontWeight.w700,
+        fontSize: AppType.titlePhone,
+        height: 1.15,
+        color: c,
+      );
+  static TextStyle lead(Color c) => TextStyle(
+        fontFamily: AppType.fontBody,
+        fontWeight: FontWeight.w600,
+        fontSize: AppType.leadPhone,
+        height: 1.3,
+        color: c,
+      );
+  static TextStyle body(Color c) => TextStyle(
+        fontFamily: AppType.fontBody,
+        fontWeight: FontWeight.w400,
+        fontSize: AppType.bodyPhone,
+        height: 1.5,
+        color: c,
+      );
+  static TextStyle bodyStrong(Color c) => TextStyle(
+        fontFamily: AppType.fontBody,
+        fontWeight: FontWeight.w600,
+        fontSize: AppType.bodyPhone,
+        height: 1.5,
+        color: c,
+      );
+  static TextStyle caption(Color c) => TextStyle(
+        fontFamily: AppType.fontBody,
+        fontWeight: FontWeight.w500,
+        fontSize: AppType.captionPhone,
+        height: 1.4,
+        color: c,
+      );
+  static TextStyle button(Color c) => TextStyle(
+        fontFamily: AppType.fontBody,
+        fontWeight: FontWeight.w600,
+        fontSize: AppType.bodyPhone,
+        height: 1.2,
+        color: c,
+      );
+  static TextStyle mono(Color c, {double size = AppType.bodyPhone}) => TextStyle(
+        fontFamily: AppType.fontMono,
+        fontWeight: FontWeight.w500,
+        fontSize: size,
+        height: 1.3,
+        color: c,
+        fontFeatures: const [FontFeature.tabularFigures()],
+      );
+}
