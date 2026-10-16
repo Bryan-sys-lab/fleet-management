@@ -64,8 +64,6 @@ jobs:
           target: prod
           load: true
           tags: fleet-api:local
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
 
       - name: Apply schema to throwaway Postgres
         run: npm run db:validate
