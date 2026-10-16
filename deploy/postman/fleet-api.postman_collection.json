@@ -10,7 +10,10 @@
       "request": {
         "method": "GET",
         "header": [],
-        "url": "http://localhost:4000/healthz"
+        "url": {
+          "raw": "http://localhost:4000/healthz",
+          "protocol": "http"
+        }
       },
       "event": [
         {
@@ -41,7 +44,10 @@
       "request": {
         "method": "GET",
         "header": [],
-        "url": "http://localhost:4000/readyz"
+        "url": {
+          "raw": "http://localhost:4000/readyz",
+          "protocol": "http"
+        }
       },
       "event": [
         {
@@ -71,7 +77,10 @@
       "request": {
         "method": "GET",
         "header": [],
-        "url": "http://localhost:4000/health/deep"
+        "url": {
+          "raw": "http://localhost:4000/health/deep",
+          "protocol": "http"
+        }
       },
       "event": [
         {
@@ -101,7 +110,10 @@
       "request": {
         "method": "GET",
         "header": [],
-        "url": "http://localhost:4000/metrics"
+        "url": {
+          "raw": "http://localhost:4000/metrics",
+          "protocol": "http"
+        }
       },
       "event": [
         {
@@ -131,7 +143,10 @@
       "request": {
         "method": "GET",
         "header": [],
-        "url": "http://localhost:4000/api/v1/me"
+        "url": {
+          "raw": "http://localhost:4000/api/v1/me",
+          "protocol": "http"
+        }
       },
       "event": [
         {
@@ -162,7 +177,10 @@
       "request": {
         "method": "GET",
         "header": [],
-        "url": "http://localhost:4000/api/v1/vehicles"
+        "url": {
+          "raw": "http://localhost:4000/api/v1/vehicles",
+          "protocol": "http"
+        }
       },
       "event": [
         {
@@ -197,7 +215,10 @@
             "value": "application/json"
           }
         ],
-        "url": "http://localhost:4000/api/v1/auth/login",
+        "url": {
+          "raw": "http://localhost:4000/api/v1/auth/login",
+          "protocol": "http"
+        },
         "body": {
           "mode": "raw",
           "raw": "{}"
@@ -231,7 +252,10 @@
       "request": {
         "method": "GET",
         "header": [],
-        "url": "http://localhost:4000/api/v1/accidents"
+        "url": {
+          "raw": "http://localhost:4000/api/v1/accidents",
+          "protocol": "http"
+        }
       },
       "event": [
         {
@@ -261,7 +285,10 @@
       "request": {
         "method": "GET",
         "header": [],
-        "url": "http://localhost:4000/api/v1/admin/hardware"
+        "url": {
+          "raw": "http://localhost:4000/api/v1/admin/hardware",
+          "protocol": "http"
+        }
       },
       "event": [
         {
@@ -296,7 +323,10 @@
             "value": "application/json"
           }
         ],
-        "url": "http://localhost:4000/api/v1/telemetry/webhook",
+        "url": {
+          "raw": "http://localhost:4000/api/v1/telemetry/webhook",
+          "protocol": "http"
+        },
         "body": {
           "mode": "raw",
           "raw": "{}"
@@ -339,7 +369,10 @@
             "value": "GET"
           }
         ],
-        "url": "http://localhost:4000/healthz"
+        "url": {
+          "raw": "http://localhost:4000/healthz",
+          "protocol": "http"
+        }
       },
       "event": [
         {
@@ -369,7 +402,10 @@
       "request": {
         "method": "GET",
         "header": [],
-        "url": "http://localhost:4000/api/v1/does-not-exist"
+        "url": {
+          "raw": "http://localhost:4000/api/v1/does-not-exist",
+          "protocol": "http"
+        }
       },
       "event": [
         {
