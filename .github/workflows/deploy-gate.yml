@@ -97,7 +97,7 @@ jobs:
           echo "API is healthy — running Newman tests."
 
       - name: Install Newman (Postman CLI)
-        run: npm install -g newman@5.3.2
+        run: npm install -g newman@6
 
       - name: Run Newman against all APIs (security headers + fail-secure auth)
         run: |
