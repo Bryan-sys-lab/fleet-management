@@ -1,7 +1,7 @@
 -- =============================================================================
 -- 18_clerk_user_id.sql
 -- Add clerk_user_id to app.users so Clerk (managed auth) can map clerk_user_id
-# → internal app.users.id. Nullable during migration; backfilled via Clerk
+-- → internal app.users.id. Nullable during migration; backfilled via Clerk
 -- user.created / user.updated webhooks. Unique so one Clerk user maps to one
 -- internal user.
 -- =============================================================================
