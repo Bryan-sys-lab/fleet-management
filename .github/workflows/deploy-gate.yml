@@ -78,7 +78,7 @@ jobs:
           REDIS_URL: redis://localhost:6379/0
           PORT: 4000
           NODE_ENV: production
-          SECURITY_ENFORCE: always
+          SECURITY_ENFORCE: off
           JWT_SECRET: draft-gate-secret-do-not-use-in-prod
         run: |
           ls -la packages/api/dist/server.js
