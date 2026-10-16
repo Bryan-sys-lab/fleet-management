@@ -29,6 +29,8 @@ services:
       interval: 5s
       timeout: 5s
       retries: 20
+    # C5.4: Postgres needs shared memory; dind/CI runners default to small /dev/shm.
+    shm_size: '256m'
 
   redis:
     image: redis:7-alpine
