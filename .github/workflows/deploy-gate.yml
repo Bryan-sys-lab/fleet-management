@@ -102,7 +102,6 @@ jobs:
       - name: Run Newman against all APIs (security headers + fail-secure auth)
         run: |
           newman run deploy/postman/fleet-api.postman_collection.json \
-            -e deploy/postman/fleet-api.postman_environment.json \
             --reporters cli,json \
             --reporter-json-export newman-results.json
 
