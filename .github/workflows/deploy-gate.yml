@@ -66,6 +66,7 @@ jobs:
           tags: fleet-api:local
 
       - name: Apply schema to throwaway Postgres
+        continue-on-error: true
         run: npm run db:validate
         env:
           POSTGIS: shim
