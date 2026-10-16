@@ -16,9 +16,28 @@ jobs:
     name: Build image, start stack, run Newman API tests
     runs-on: ubuntu-latest
     services:
-      docker:
-        image: docker:27-dind
-        options: --privileged
+      postgres:
+        image: postgis/postgis:16-3.4
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: pg_local_dev
+          POSTGRES_DB: fleet
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5444:5432
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
     steps:
       - name: Checkout (full history for turbo)
         uses: actions/checkout@v4
@@ -38,9 +57,8 @@ jobs:
           tags: fleet-api:local
           cache-from: type=gha
           cache-to: type=gha,mode=max
-          progress: plain
 
-      - name: Write env file for compose
+      - name: Write env file for api container
         run: |
           cat > deploy/.env <<'EOF'
           POSTGRES_USER=postgres
@@ -64,11 +82,17 @@ jobs:
           AWS_SECRET_ACCESS_KEY=
           RESEND_API_KEY=
           AFRICAS_TALKING_API_KEY=
+          DATABASE_URL=postgresql://postgres:pg_local_dev@localhost:5444/fleet
+          REDIS_URL=redis://localhost:6379/0
+          PORT=4000
           EOF
 
-      - name: Start the whole backend stack (api + postgres + redis + traccar + worker)
+      - name: Start the API container (backend stack entrypoint)
         run: |
-          docker compose -f deploy/docker-compose.yml up -d
+          docker run -d --name fleet-api \
+            --env-file deploy/.env \
+            -p 4000:4000 \
+            fleet-api:local
           echo "Waiting for API to become healthy..."
           timeout 90 bash -c 'until curl -sf http://localhost:4000/healthz >/dev/null 2>&1; do sleep 2; done'
           echo "API is healthy — running Newman tests."
@@ -92,7 +116,7 @@ jobs:
           path: newman-results.json
           if-no-files-found: warn
 
-      - name: Stop the backend stack
+      - name: Stop containers
         if: always()
         run: |
-          docker compose -f deploy/docker-compose.yml down -v
+          docker rm -f fleet-api 2>/dev/null || true
