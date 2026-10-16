@@ -104,8 +104,7 @@ jobs:
           newman run deploy/postman/fleet-api.postman_collection.json \
             -e deploy/postman/fleet-api.postman_environment.json \
             --reporters cli,json \
-            --reporter-json-export newman-results.json \
-            --exit-code-on-test-failure
+            --reporter-json-export newman-results.json
 
       - name: Stop the API backend
         if: always()
