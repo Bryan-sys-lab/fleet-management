@@ -36,7 +36,10 @@ export function authenticate(deps: AuthenticateDeps) {
       req.principal = principal;
       next();
     } catch (e) {
-      next(e);
+      // Fail-secure: any failure during Clerk JWT verification (misconfigured JWKS, unreachable
+      // JWKS, invalid signature, expired token) rejects the request with 401 — never 500, never
+      // pass-through. When Clerk is not yet configured every authenticated route fails closed.
+      next(e instanceof Unauthenticated ? e : new Unauthenticated("Authentication failed"));
     }
   };
 }

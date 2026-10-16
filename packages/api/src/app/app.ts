@@ -48,7 +48,7 @@ export function createApp(container: Container): Express {
   const app = express();
   const base = container.env.API_BASE_PATH;
 
-  app.use(helmet());
+  app.use(helmet({ hidePoweredBy: true }));
   app.use(requestContext());
 
   // Clerk webhooks need the raw body for Svix signature verification. Mount raw-body

@@ -1,8 +1,8 @@
 # =============================================================================
 # deploy/Dockerfile - single image, two roles (api / worker)
 # Targets:
-#   dev   : source mounted, ts-node watch (used by docker-compose)
-#   prod  : compiled dist (used by k8s)
+#   dev   : source mounted, ts-node watch (used by docker-compose dev)
+#   prod  : compiled dist (used by k8s and docker-compose prod)
 # =============================================================================
 
 FROM node:20-bookworm AS base
@@ -24,4 +24,6 @@ CMD ["npm", "run", "dev:api"]
 FROM prod-build AS prod
 ENV NODE_ENV=production
 EXPOSE 4000
-CMD ["node", "dist/api/server.js"]
+# @fleet/api compiles to packages/api/dist/server.js; start via the workspace script so
+# the CWD resolves to packages/api/ (where "dist/server.js" lives).
+CMD ["npm", "--workspace", "@fleet/api", "start"]
