@@ -104,7 +104,7 @@ class _VehiclesScreenState extends ConsumerState<VehiclesScreen> {
                     Padding(
                       padding: const EdgeInsets.all(AppSpace.s4),
                       child: OutlinedButton.icon(
-                        icon: const Icon(Icons.add, color: AppColors.adminAccent),
+                        icon: Icon(Icons.add, color: AppColors.adminAccent),
                         label: HelixText(strings.t('vehicle.create'), style: TypeScale.button(AppColors.adminAccent)),
                         onPressed: _createVehicle,
                       ),
@@ -141,7 +141,7 @@ class _VehiclesScreenState extends ConsumerState<VehiclesScreen> {
             const SizedBox(height: AppSpace.s3),
             DropdownButtonFormField<String>(
               initialValue: vehicleClass,
-              decoration: const InputDecoration(filled: true, fillColor: AppColors.surfaceSunk),
+              decoration: InputDecoration(filled: true, fillColor: AppColors.surfaceSunk),
               items: ['TRACTOR', 'RIGID', 'VAN', 'PICKUP']
                   .map((c) => DropdownMenuItem(value: c, child: HelixText(c, style: TypeScale.body(AppColors.text))))
                   .toList(),

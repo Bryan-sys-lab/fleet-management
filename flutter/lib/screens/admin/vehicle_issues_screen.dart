@@ -104,7 +104,7 @@ class _VehicleIssuesScreenState extends ConsumerState<VehicleIssuesScreen> {
                 children: [
                   DropdownButtonFormField<String>(
                     initialValue: _category,
-                    decoration: const InputDecoration(filled: true, fillColor: AppColors.surfaceSunk),
+                    decoration: InputDecoration(filled: true, fillColor: AppColors.surfaceSunk),
                     items: ['MECHANICAL', 'ELECTRICAL', 'TYRE', 'BODY', 'OTHER']
                         .map((c) => DropdownMenuItem(value: c, child: HelixText(c, style: TypeScale.body(AppColors.text))))
                         .toList(),
@@ -113,7 +113,7 @@ class _VehicleIssuesScreenState extends ConsumerState<VehicleIssuesScreen> {
                   const SizedBox(height: AppSpace.s3),
                   DropdownButtonFormField<String>(
                     initialValue: _severity,
-                    decoration: const InputDecoration(filled: true, fillColor: AppColors.surfaceSunk),
+                    decoration: InputDecoration(filled: true, fillColor: AppColors.surfaceSunk),
                     items: ['LOW', 'MEDIUM', 'HIGH']
                         .map((s) => DropdownMenuItem(value: s, child: HelixText(s, style: TypeScale.body(AppColors.text))))
                         .toList(),

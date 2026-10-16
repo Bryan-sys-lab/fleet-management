@@ -93,7 +93,7 @@ class _ImportStatementScreenState extends ConsumerState<ImportStatementScreen> {
                   HelixText(strings.t('importer.pick'), style: TypeScale.body(AppColors.text)),
                   const SizedBox(height: AppSpace.s2),
                   OutlinedButton.icon(
-                    icon: const Icon(Icons.attach_file, color: AppColors.adminAccent),
+                    icon: Icon(Icons.attach_file, color: AppColors.adminAccent),
                     label: HelixText(_mediaObjectId == null ? strings.t('importer.pick') : 'Uploaded', style: TypeScale.body(AppColors.text)),
                     onPressed: () async {
                       // The CSV goes through the same presign path as photos:

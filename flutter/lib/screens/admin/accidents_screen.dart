@@ -45,7 +45,7 @@ class AdminAccidentsScreen extends ConsumerWidget {
             ),
             trailing: row['acknowledged_at'] != null || !canAck
                 ? null
-                : const Icon(Icons.circle, size: 10, color: AppColors.statusDanger),
+                : Icon(Icons.circle, size: 10, color: AppColors.statusDanger),
             onTap: () => context.push('/admin/accidents/${row['accident_id']}'),
           );
         },
