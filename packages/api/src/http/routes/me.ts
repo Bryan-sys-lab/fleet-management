@@ -24,7 +24,7 @@ export function createMeRouter(deps: MeRouterDeps): Router {
   // ── Own consent status (contract status endpoint) ────────────────────────────────────
   router.get(
     "/consent",
-    authenticate({ tokens: infra.tokens, sessions: infra.store, strictSessionCheck: infra?.env?.SECURITY_ENFORCE === "always" }),
+    authenticate({ env: infra.env }),
     asyncHandler((req, res) =>
       withClient(pool, async (client) => {
         const principal = (req as { principal?: Principal }).principal as Principal;

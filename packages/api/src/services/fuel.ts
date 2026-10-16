@@ -36,10 +36,10 @@ export interface RefuelOutcome {
 }
 
 /**
- * Photo-first capture (A1.4). The driver only supplies the two photographs and an odometer
- * reading; litres / amount / station / receipt date arrive from the OCR worker.
+ * Photo-first capture (A1.4). The driver only supplies the two photographs (receipt + pump) and an
+ * odometer reading; litres / amount / station / receipt date arrive from the OCR worker.
  *
- * Two DB realities shape the INSERT below (07_financial.sql, as amended by migration 12):
+ * Two DB realities shape the INSERT below (07_financial.sql, as amended by migrations 12 and 17):
  *  - `litres` and `total_cost` are NOT NULL, so the as-captured values live in the new
  *    `liters_pumped` / `amount_spent` columns and the legacy pair is seeded with 0 until an
  *    Admin verifies. Migration 12 widens the litres CHECK to `>= 0` and regenerates `unit_price`
@@ -47,7 +47,8 @@ export interface RefuelOutcome {
  *  - `fuel_purchases_driver_entry_has_gauge_pair` forbids a DRIVER row without the B3 gauge pair,
  *    which photo-first deliberately does not collect. Rather than laundering the row through the
  *    privileged `ADMIN` back-entry branch, migration 12 adds a dedicated `DRIVER_PHOTO`
- *    entry_source whose own constraint requires the receipt + odometer photo pair instead.
+ *    entry_source whose own constraint (amended by migration 17) requires the receipt + pump photo
+ *    pair instead of the retired odometer gauge photo.
  */
 export interface PhotoFirstOutcome {
   fuelPurchaseId: string;
@@ -91,9 +92,9 @@ export class FuelService {
       `INSERT INTO app.fuel_purchases (
          shift_id, vehicle_id, driver_id, entry_source,
          fuel_card_last_four, litres, total_cost, odometer_km, purchased_at,
-         receipt_media_object_id, odometer_photo_media_object_id,
+         receipt_media_object_id, pump_photo_media_object_id, odometer_photo_media_object_id,
          amount_spent, liters_pumped, ocr_status
-       ) VALUES ($1,$2,$3,'DRIVER_PHOTO',$4,0,0,$5,$6,$7,$8,NULL,NULL,'PENDING')
+       ) VALUES ($1,$2,$3,'DRIVER_PHOTO',$4,0,0,$5,$6,$7,$8,NULL,NULL,NULL,'PENDING')
        RETURNING id`,
       [
         input.shift_id,
@@ -103,7 +104,8 @@ export class FuelService {
         input.odometer_reading,
         input.purchased_at,
         input.receipt_media_object_id,
-        input.odometer_photo_media_object_id,
+        input.pump_photo_media_object_id,
+        input.odometer_photo_media_object_id ?? null,
       ],
     );
     const id = res.rows[0]!.id;
@@ -483,7 +485,7 @@ export class FuelQuery {
       `WITH pending AS (
          SELECT fp.id, fp.vehicle_id, fp.driver_id, fp.purchased_at, fp.receipt_date,
                 fp.station_name, fp.amount_spent, fp.liters_pumped, fp.price_per_liter,
-                fp.odometer_km, fp.receipt_media_object_id, fp.odometer_photo_media_object_id,
+                fp.odometer_km, fp.receipt_media_object_id, fp.pump_photo_media_object_id, fp.odometer_photo_media_object_id,
                 fp.ocr_status, fp.ocr_method, fp.ocr_raw, fp.ocr_confidence, fp.driver_corrected
            FROM app.fuel_purchases fp
           WHERE fp.tenant_id = $3 AND fp.admin_verified = false AND fp.rejected_at IS NULL
@@ -502,6 +504,7 @@ export class FuelQuery {
               p.price_per_liter,
               p.odometer_km,
               p.receipt_media_object_id,
+              p.pump_photo_media_object_id,
               p.odometer_photo_media_object_id,
               p.ocr_status,
               p.ocr_method,

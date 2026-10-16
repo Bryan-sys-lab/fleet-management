@@ -36,7 +36,7 @@ export function createInspectionRouter(deps: InspectionRouterDeps): Router {
 
   router.post(
     "/",
-    authenticate({ tokens: infra.tokens, sessions: infra.store, strictSessionCheck: infra?.env?.SECURITY_ENFORCE === "always" }),
+    authenticate({ env: infra.env }),
     requirePermission(asPerm("inspection:submit")),
     idempotency({ idempotency: idem }),
     asyncHandler((req, res) =>
@@ -70,7 +70,7 @@ export function createInspectionRouter(deps: InspectionRouterDeps): Router {
   // ── Templates the driver may start (read) ────────────────────────────────────────────────
   router.get(
     "/templates",
-    authenticate({ tokens: infra.tokens, sessions: infra.store, strictSessionCheck: infra?.env?.SECURITY_ENFORCE === "always" }),
+    authenticate({ env: infra.env }),
     requirePermission(asPerm("inspection:read")),
     asyncHandler((req, res) =>
       withClient(pool, async (client) => {
@@ -88,7 +88,7 @@ export function createInspectionRouter(deps: InspectionRouterDeps): Router {
   // ── Own DVIR submissions (read, cursor) ──────────────────────────────────────────────────
   router.get(
     "/me",
-    authenticate({ tokens: infra.tokens, sessions: infra.store, strictSessionCheck: infra?.env?.SECURITY_ENFORCE === "always" }),
+    authenticate({ env: infra.env }),
     requirePermission(asPerm("inspection:read")),
     asyncHandler((req, res) =>
       withClient(pool, async (client) => {
@@ -115,7 +115,7 @@ export function createInspectionRouter(deps: InspectionRouterDeps): Router {
   // resolves their own submission; anything else 404s.
   router.get(
     "/:id",
-    authenticate({ tokens: infra.tokens, sessions: infra.store, strictSessionCheck: infra?.env?.SECURITY_ENFORCE === "always" }),
+    authenticate({ env: infra.env }),
     requirePermission(asPerm("inspection:read")),
     asyncHandler((req, res) =>
       withClient(pool, async (client) => {
@@ -142,7 +142,7 @@ export function createInspectionRouter(deps: InspectionRouterDeps): Router {
   // and signature names. `inspection:template_manage` is the scope-lift.
   router.get(
     "/",
-    authenticate({ tokens: infra.tokens, sessions: infra.store, strictSessionCheck: infra?.env?.SECURITY_ENFORCE === "always" }),
+    authenticate({ env: infra.env }),
     requirePermission(asPerm("inspection:read")),
     asyncHandler((req, res) =>
       withClient(pool, async (client) => {

@@ -39,7 +39,7 @@ export function createVehicleIssueRouter(deps: VehicleIssueRouterDeps): Router {
   // ── Report an issue (driver) ─────────────────────────────────────────────────────────────
   router.post(
     "/vehicles/:vehicleId/issues",
-    authenticate({ tokens: infra.tokens, sessions: infra.store, strictSessionCheck: infra?.env?.SECURITY_ENFORCE === "always" }),
+    authenticate({ env: infra.env }),
     requirePermission(asPerm("vehicle:report")),
     idempotency({ idempotency: idem }),
     asyncHandler((req, res) =>
@@ -77,7 +77,7 @@ export function createVehicleIssueRouter(deps: VehicleIssueRouterDeps): Router {
   // ── Issues for a vehicle (maintenance triage / driver history) ───────────────────────────
   router.get(
     "/vehicles/:vehicleId/issues",
-    authenticate({ tokens: infra.tokens, sessions: infra.store, strictSessionCheck: infra?.env?.SECURITY_ENFORCE === "always" }),
+    authenticate({ env: infra.env }),
     requirePermission(asPerm("asset:read"), asPerm("maintenance:read")),
     asyncHandler((req, res) =>
       withClient(pool, async (client) => {

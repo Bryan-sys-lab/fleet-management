@@ -17,16 +17,18 @@ export const VerifyPurchaseSchema = z.object({
 export type VerifyPurchaseInput = z.infer<typeof VerifyPurchaseSchema>;
 
 /**
- * `POST /driver/fuel/purchase` — photo-first refuel (A1.4). The receipt and odometer photos are
+ * `POST /driver/fuel/purchase` — photo-first refuel (A1.4). The receipt and pump photos are
  * uploaded first; `odometer_reading` is the only hand-typed value (amount/litres/date/station are
- * OCR'd server-side).
+ * OCR'd server-side). The legacy odometer gauge photo is optional and no longer part of the
+ * required evidence pair.
  */
 export const PhotoFirstRefuelSchema = z.object({
   shift_id: z.string().uuid().nullable(),
   vehicle_id: z.string().uuid(),
   odometer_reading: z.number().int().nonnegative(),
   receipt_media_object_id: z.string().uuid(),
-  odometer_photo_media_object_id: z.string().uuid(),
+  pump_photo_media_object_id: z.string().uuid(),
+  odometer_photo_media_object_id: z.string().uuid().optional().nullable(),
   fuel_card_last_four: z.string().regex(/^\d{4}$/).optional(),
   purchased_at: z.string().datetime(),
 });
@@ -80,6 +82,7 @@ export const FuelPendingRowSchema = z.object({
   driver_corrected: z.boolean().nullable().optional(),
   badge: FuelPendingBadgeSchema.default("REVIEW"),
   receipt_media_object_id: z.string().nullable().optional(),
+  pump_photo_media_object_id: z.string().nullable().optional(),
   odometer_photo_media_object_id: z.string().nullable().optional(),
 });
 export type FuelPendingRow = z.infer<typeof FuelPendingRowSchema>;

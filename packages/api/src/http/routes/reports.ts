@@ -33,7 +33,7 @@ export function createReportsRouter(deps: ReportsRouterDeps): Router {
   // ── Fleet fuel efficiency ────────────────────────────────────────────────────────────────
   router.get(
     "/fuel-efficiency",
-    authenticate({ tokens: infra.tokens, sessions: infra.store, strictSessionCheck: infra?.env?.SECURITY_ENFORCE === "always" }),
+    authenticate({ env: infra.env }),
     requirePermission(asPerm("report:read")),
     asyncHandler((req, res) =>
       withClient(pool, async (client) => {

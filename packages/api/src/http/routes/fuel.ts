@@ -64,7 +64,7 @@ export function createFuelRouter(deps: FuelRouterDeps): Router {
   // ── Verify / reject / clear a purchase (Fleet Mgr / Finance) ──────────────────────────────
   router.post(
     "/purchases/:id/verify",
-    authenticate({ tokens: infra.tokens, sessions: infra.store, strictSessionCheck: infra?.env?.SECURITY_ENFORCE === "always" }),
+    authenticate({ env: infra.env }),
     requirePermission(asPerm("fuel:verify")),
     idempotency({ idempotency: idem }),
     asyncHandler((req, res) =>
@@ -86,7 +86,7 @@ export function createFuelRouter(deps: FuelRouterDeps): Router {
   // ── Create a fuel card (C2.1/C2.2) ───────────────────────────────────────────────────────
   router.post(
     "/cards",
-    authenticate({ tokens: infra.tokens, sessions: infra.store, strictSessionCheck: infra?.env?.SECURITY_ENFORCE === "always" }),
+    authenticate({ env: infra.env }),
     requirePermission(asPerm("fuel:card_manage")),
     idempotency({ idempotency: idem }),
     asyncHandler((req, res) =>
@@ -117,7 +117,7 @@ export function createFuelRouter(deps: FuelRouterDeps): Router {
    */
   router.get(
     "/cards",
-    authenticate({ tokens: infra.tokens, sessions: infra.store, strictSessionCheck: infra?.env?.SECURITY_ENFORCE === "always" }),
+    authenticate({ env: infra.env }),
     requirePermission(asPerm("asset:read")),
     asyncHandler(async (req, res) => {
       const query = parseQuery(FuelCardQuerySchema, req);
@@ -138,7 +138,7 @@ export function createFuelRouter(deps: FuelRouterDeps): Router {
   // ── Reconciliation inbox (read, cursor) ────────────────────────────────────────────────────
   router.get(
     "/reconciliation-inbox",
-    authenticate({ tokens: infra.tokens, sessions: infra.store, strictSessionCheck: infra?.env?.SECURITY_ENFORCE === "always" }),
+    authenticate({ env: infra.env }),
     requirePermission(asPerm("fuel:read")),
     asyncHandler((req, res) =>
       withClient(pool, async (client) => {
@@ -170,7 +170,7 @@ export function createReconciliationRouter(deps: FuelRouterDeps): Router {
 
   router.post(
     "/statements",
-    authenticate({ tokens: infra.tokens, sessions: infra.store, strictSessionCheck: infra?.env?.SECURITY_ENFORCE === "always" }),
+    authenticate({ env: infra.env }),
     requirePermission(asPerm("fuel:reconcile")),
     idempotency({ idempotency: idem }),
     asyncHandler((req, res) =>
@@ -214,7 +214,7 @@ export function createDriverFuelRouter(deps: FuelRouterDeps): Router {
   // ── Submit receipt + odometer photographs ─────────────────────────────────────────────────
   router.post(
     "/purchase",
-    authenticate({ tokens: infra.tokens, sessions: infra.store, strictSessionCheck: infra?.env?.SECURITY_ENFORCE === "always" }),
+    authenticate({ env: infra.env }),
     requirePermission(asPerm("fuel:submit_purchase")),
     idempotency({ idempotency: idem }),
     asyncHandler((req, res) =>
@@ -238,7 +238,7 @@ export function createDriverFuelRouter(deps: FuelRouterDeps): Router {
   // ── Correct what OCR read ──────────────────────────────────────────────────────────────────
   router.post(
     "/correct",
-    authenticate({ tokens: infra.tokens, sessions: infra.store, strictSessionCheck: infra?.env?.SECURITY_ENFORCE === "always" }),
+    authenticate({ env: infra.env }),
     requirePermission(asPerm("fuel:submit_purchase")),
     idempotency({ idempotency: idem }),
     asyncHandler((req, res) =>
@@ -264,7 +264,7 @@ export function createDriverFuelRouter(deps: FuelRouterDeps): Router {
   // The driver's review screen polls this until `ocr_status` is terminal, then renders the fields.
   router.get(
     "/purchase/:id/ocr",
-    authenticate({ tokens: infra.tokens, sessions: infra.store, strictSessionCheck: infra?.env?.SECURITY_ENFORCE === "always" }),
+    authenticate({ env: infra.env }),
     requirePermission(asPerm("fuel:submit_purchase")),
     asyncHandler((req, res) =>
       withClient(pool, async (client) => {
