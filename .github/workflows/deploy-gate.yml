@@ -20,8 +20,10 @@ jobs:
         image: docker:27-dind
         options: --privileged
     steps:
-      - name: Checkout
+      - name: Checkout (full history for turbo)
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -36,6 +38,7 @@ jobs:
           tags: fleet-api:local
           cache-from: type=gha
           cache-to: type=gha,mode=max
+          progress: plain
 
       - name: Write env file for compose
         run: |
