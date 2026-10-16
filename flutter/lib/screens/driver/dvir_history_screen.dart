@@ -32,7 +32,7 @@ class DvirHistoryScreen extends ConsumerWidget {
             '${row['vehicle_plate'] ?? ''} · ${row['status'] ?? ''} · ${row['defect_count'] ?? 0} defects',
             style: TypeScale.caption(AppColors.textSecondary),
           ),
-          trailing: row['quarantined'] == true ? const HelixChip(label: '!', color: AppColors.statusDanger) : null,
+          trailing: row['quarantined'] == true ? HelixChip(label: '!', color: AppColors.statusDanger) : null,
         ),
       ),
     );

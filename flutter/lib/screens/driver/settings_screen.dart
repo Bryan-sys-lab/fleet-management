@@ -51,12 +51,12 @@ class DriverSettingsScreen extends ConsumerWidget {
                 ),
                 if (hasAdmin)
                   ListTile(
-                    leading: const Icon(Icons.swap_horiz, color: AppColors.adminAccent),
+                    leading: Icon(Icons.swap_horiz, color: AppColors.adminAccent),
                     title: HelixText(
                       strings.t('settings.switchRole', {'role': strings.t('settings.roleADMIN')}),
                       style: TypeScale.body(AppColors.text),
                     ),
-                    trailing: const Icon(Icons.chevron_right, color: AppColors.textSecondary),
+                    trailing: Icon(Icons.chevron_right, color: AppColors.textSecondary),
                     onTap: () async {
                       await session.persistShell('admin');
                       if (!context.mounted) return;
@@ -75,7 +75,7 @@ class DriverSettingsScreen extends ConsumerWidget {
                 ),
                 ListTile(
                   title: HelixText(strings.t('profile.setupMfa'), style: TypeScale.body(AppColors.text)),
-                  trailing: const Icon(Icons.chevron_right, color: AppColors.textSecondary),
+                  trailing: Icon(Icons.chevron_right, color: AppColors.textSecondary),
                   onTap: () => context.push('/driver/mfa-setup'),
                 ),
                 ListTile(
@@ -90,7 +90,7 @@ class DriverSettingsScreen extends ConsumerWidget {
               children: [
                 ListTile(
                   title: HelixText(strings.t('profile.openOutbox'), style: TypeScale.body(AppColors.text)),
-                  trailing: const Icon(Icons.chevron_right, color: AppColors.textSecondary),
+                  trailing: Icon(Icons.chevron_right, color: AppColors.textSecondary),
                   onTap: () => context.push('/driver/outbox'),
                 ),
               ],
@@ -101,7 +101,7 @@ class DriverSettingsScreen extends ConsumerWidget {
               children: [
                 ListTile(
                   title: HelixText(strings.t('profile.openOutbox'), style: TypeScale.body(AppColors.text)),
-                  trailing: const Icon(Icons.chevron_right, color: AppColors.textSecondary),
+                  trailing: Icon(Icons.chevron_right, color: AppColors.textSecondary),
                   onTap: () => context.push('/driver/outbox'),
                 ),
                 ListTile(

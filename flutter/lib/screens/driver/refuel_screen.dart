@@ -18,8 +18,8 @@ import '../../design/tokens.dart';
 import '../common.dart';
 import 'home_state.dart';
 
-/// Photo-first refuel: receipt photo → odometer photo + reading → card picker
-/// (last-4 typed) → purchased-at → submit. Two staged photos, one write.
+/// Photo-first refuel: receipt photo → pump photo → odometer reading → card picker
+/// (last-4 typed) → purchased-at → submit. Two staged photos (receipt + pump), one write.
 class RefuelScreen extends ConsumerStatefulWidget {
   const RefuelScreen({super.key});
 
@@ -36,7 +36,7 @@ class _RefuelScreenState extends ConsumerState<RefuelScreen> {
   final _station = TextEditingController();
   final _purchasedAt = TextEditingController();
   XFile? _receipt;
-  XFile? _odometerPhoto;
+  XFile? _pump;
   String? _cardId;
   bool _busy = false;
 
@@ -67,7 +67,7 @@ class _RefuelScreenState extends ConsumerState<RefuelScreen> {
     final km = int.tryParse(_odometer.text.trim());
     final shift = await ref.read(activeShiftProvider.future);
     final vehicleId = shift?['vehicle_id'] as String?;
-    if (km == null || _receipt == null || _odometerPhoto == null || vehicleId == null) return;
+    if (km == null || _receipt == null || _pump == null || vehicleId == null) return;
 
     setState(() => _busy = true);
     try {
@@ -78,15 +78,15 @@ class _RefuelScreenState extends ConsumerState<RefuelScreen> {
         ownerKind: 'FUEL_RECEIPT',
         retentionClass: 'RECEIPT',
       );
-      final odometerPhoto = await media.stageCapture(
-        await _odometerPhoto!.readAsBytes(),
-        slot: MediaService.slotGauge,
-        ownerKind: 'FUEL_DASHBOARD',
+      final pump = await media.stageCapture(
+        await _pump!.readAsBytes(),
+        slot: MediaService.slotPump,
+        ownerKind: 'FUEL_PURCHASE',
         retentionClass: 'RECEIPT',
       );
       final litres = Fmt.parseDecimal(_litres.text);
       final cost = Fmt.parseDecimal(_cost.text);
-      if (receipt == null || odometerPhoto == null || litres == null || cost == null) {
+      if (receipt == null || pump == null || litres == null || cost == null) {
         setState(() => _busy = false);
         return;
       }
@@ -101,12 +101,12 @@ class _RefuelScreenState extends ConsumerState<RefuelScreen> {
           'vehicle_id': vehicleId,
           'odometer_reading': km,
           'receipt_media_object_id': receipt.slot,
-          'odometer_photo_media_object_id': odometerPhoto.slot,
+          'pump_photo_media_object_id': pump.slot,
           'purchased_at': purchasedAt,
           if (_cardId != null || _last4.text.trim().isNotEmpty)
             'fuel_card_last_four': _cardId ?? _last4.text.trim(),
         },
-        uploads: [receipt, odometerPhoto],
+        uploads: [receipt, pump],
         produces: 'fuel_purchase_id',
       );
       final result = await ref.read(offQueueProvider).submitStaged([op]);
@@ -144,9 +144,9 @@ class _RefuelScreenState extends ConsumerState<RefuelScreen> {
               const SizedBox(height: AppSpace.s4),
               PhotoCapture(
                 cameras: ref.watch(camerasProvider).valueOrNull ?? const [],
-                label: strings.t('forms.gaugeBefore'),
-                captured: _odometerPhoto,
-                onCaptured: (file) => setState(() => _odometerPhoto = file),
+                label: strings.t('forms.pump'),
+                captured: _pump,
+                onCaptured: (file) => setState(() => _pump = file),
               ),
               const SizedBox(height: AppSpace.s4),
               Field(
@@ -166,7 +166,7 @@ class _RefuelScreenState extends ConsumerState<RefuelScreen> {
                     loading: () => Skeleton(height: 56),
                     error: (e, _) => inlineError(context, e),
                     data: (cardsList) => OutlinedButton.icon(
-                      icon: const Icon(Icons.credit_card, color: AppColors.textSecondary),
+                      icon: Icon(Icons.credit_card, color: AppColors.textSecondary),
                       label: HelixText(
                         _cardId != null
                             ? cardsList.firstWhere((c) => c['id'] == _cardId, orElse: () => {'label': '?'})['label']?.toString() ?? ''

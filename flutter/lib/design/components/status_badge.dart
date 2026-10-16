@@ -90,10 +90,10 @@ class StatusBadge extends StatelessWidget {
 
 /// Generic semantic chip (priority tiers, verification status, severity).
 class HelixChip extends StatelessWidget {
-  const HelixChip({super.key, required this.label, this.color = AppColors.textSecondary, this.glyph});
+  const HelixChip({super.key, required this.label, this.color, this.glyph});
 
   final String label;
-  final Color color;
+  final Color? color;
   final String? glyph;
 
   @override
@@ -108,9 +108,9 @@ class HelixChip extends StatelessWidget {
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
-        children: [
-          if (glyph != null) ...[Text(glyph!, style: TypeScale.mono(color)), const SizedBox(width: AppSpace.s2)],
-          HelixText(label, style: TypeScale.caption(color)),
+          children: [
+            if (glyph != null) ...[Text(glyph!, style: TypeScale.mono(color ?? AppColors.textSecondary)), const SizedBox(width: AppSpace.s2)],
+            HelixText(label, style: TypeScale.caption(color ?? AppColors.textSecondary)),
         ],
       ),
     );

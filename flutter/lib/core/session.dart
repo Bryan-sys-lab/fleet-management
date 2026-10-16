@@ -3,68 +3,32 @@ import 'dart:convert';
 import 'package:flutter/widgets.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'api_client.dart';
+import 'clerk_service.dart';
 import 'design_preview.dart';
 import 'errors.dart';
-import 'format.dart';
 import 'ids.dart';
 import 'policy.dart';
 import 'kv_store.dart';
+import 'format.dart';
 
 enum AuthStatus { booting, blocked, needsPin, signedOut, needsMfa, needsConsent, suspended, signedIn }
 
 const List<String> adminRoles = ['ADMIN', 'FLEET_MANAGER', 'DISPATCHER', 'FINANCE', 'AUDITOR', 'SYSTEM_ADMIN'];
 
-class SessionBody {
-  SessionBody({
-    required this.accessToken,
-    required this.accessTokenExpiresAt,
-    required this.refreshToken,
-    required this.refreshTokenExpiresAt,
-    required this.sessionId,
-    required this.userId,
-    required this.email,
-    required this.phone,
-    required this.roles,
-    required this.permissions,
-    required this.locale,
-  });
-
-  final String accessToken;
-  final DateTime accessTokenExpiresAt;
-  final String refreshToken;
-  final DateTime refreshTokenExpiresAt;
-  final String sessionId;
-  final String userId;
-  final String? email;
-  final String? phone;
-  final List<String> roles;
-  final List<String> permissions;
-  final String locale;
-
-  bool get hasDriverRole => roles.contains('DRIVER');
-  bool get hasAdminRole => roles.any(adminRoles.contains);
-
-  factory SessionBody.fromJson(Map<String, dynamic> json) => SessionBody(
-        accessToken: json['access_token'] as String,
-        accessTokenExpiresAt: DateTime.parse(json['access_token_expires_at'] as String).toUtc(),
-        refreshToken: json['refresh_token'] as String,
-        refreshTokenExpiresAt: DateTime.parse(json['refresh_token_expires_at'] as String).toUtc(),
-        sessionId: json['session_id'] as String,
-        userId: json['user_id'] as String,
-        email: json['email'] as String?,
-        phone: json['phone'] as String?,
-        roles: (json['roles'] as List?)?.cast<String>() ?? const [],
-        permissions: (json['permissions'] as List?)?.cast<String>() ?? const [],
-        locale: (json['locale'] as String?) ?? 'en',
-      );
-}
-
-/// The auth state machine. Access token lives in memory only; everything else
-/// in secure storage. The refresh is single-flight: concurrent 401s collapse.
+/// The auth state machine, now backed by Clerk (managed auth).
+///
+/// Clerk handles sign-in, sign-up, MFA, password reset, and session rotation.
+/// SessionService owns the local state machine (PIN gate, consent, shell
+/// choice) and delegates credential operations to ClerkService.
+///
+/// Access token = Clerk session token (JWT), lives in memory only.
+/// Refresh is handled by Clerk natively; refreshIfNeeded() just confirms the
+/// session token is still present.
 class SessionService extends ChangeNotifier {
-  SessionService({required this._store});
+  SessionService({required this._store, required this._clerk});
 
   final KeyValueStore _store;
+  final ClerkService _clerk;
   late ApiClient _api;
 
   /// Attached by the composition root (ApiClient needs the session's token
@@ -82,20 +46,24 @@ class SessionService extends ChangeNotifier {
   String? _pendingChallengeToken;
   bool _consentSatisfied = true;
 
-  String? get accessToken => _accessToken;
+  String? get accessToken => _accessToken ?? _clerk.sessionToken;
   String? get pendingChallengeToken => _pendingChallengeToken;
   bool get consentSatisfied => _consentSatisfied;
   bool get signedIn => status == AuthStatus.signedIn;
   bool _preview = false;
   bool get isPreview => _preview;
 
-  /// Offline design preview: installs the fixture session in place. The next
-  /// API read is answered by the preview adapter, so screens render fixtures.
+  /// Set by the composition root to ConnectivityService.
+  Future<bool> Function()? _isOnlineProbe;
+  set isOnlineProbe(Future<bool> Function()? probe) => _isOnlineProbe = probe;
+  Future<bool> get _isOnline => _isOnlineProbe?.call() ?? Future.value(true);
+
+  /// Offline design preview: installs the fixture session in place.
   Future<void> enterPreview() async {
     _preview = true;
     DesignPreview.markActive();
     _accessToken = 'preview-access-token';
-    await persistShell('admin'); // the review starts in the admin shell
+    await persistShell('admin');
     roles = DesignPreview.roles;
     permissions = DesignPreview.permissions;
     userId = DesignPreview.userId;
@@ -115,25 +83,20 @@ class SessionService extends ChangeNotifier {
       notifyListeners();
       return;
     }
-    final storedRefresh = await _store.read(StoreKeys.refreshToken);
-    if (storedRefresh == null) {
+    await _clerk.boot();
+    if (!_clerk.isSignedIn) {
       status = AuthStatus.signedOut;
       notifyListeners();
       return;
     }
-    // Offline with a PIN on file → PIN gate first, refresh later.
+    // Offline with a PIN on file → PIN gate first (only if we know we're offline).
     final pinHash = await _store.read(StoreKeys.pinHash);
-    if (pinHash != null && !await _isOnline) {
+    if (pinHash != null && !(await _isOnline)) {
       status = AuthStatus.needsPin;
       notifyListeners();
       return;
     }
-    final restored = await _restoreSession(storedRefresh);
-    if (!restored) {
-      status = AuthStatus.signedOut;
-      notifyListeners();
-      return;
-    }
+    await _restoreFromClerk();
     if (!_consentSatisfied) {
       status = AuthStatus.needsConsent;
     } else {
@@ -142,76 +105,73 @@ class SessionService extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<bool> _restoreSession(String refreshToken) async {
-    if (!await _withinOfflineCeiling()) return false;
+  Future<void> _restoreFromClerk() async {
+    _accessToken = _clerk.sessionToken;
+    final storedUserId = await _store.read(StoreKeys.userId);
+    userId = _clerk.sessionToken != null ? storedUserId : null;
+    final rolesRaw = await _store.read(StoreKeys.roles);
+    roles = rolesRaw != null ? (jsonDecode(rolesRaw) as List).cast<String>() : const [];
+    final permsRaw = await _store.read(StoreKeys.permissions);
+    permissions = permsRaw != null ? (jsonDecode(permsRaw) as List).cast<String>() : const [];
+    final consentRaw = await _store.read(StoreKeys.consentVersion);
+    _consentSatisfied = consentRaw != null;
+  }
+
+  /// Single-flight refresh. With Clerk, session rotation is handled natively;
+  /// we just confirm the session token is still present.
+  Future<bool> refreshIfNeeded() async {
+    if (_refreshInFlight != null) return _refreshInFlight!.future;
+    final completer = Completer<bool>();
+    _refreshInFlight = completer;
     try {
-      final body = await _refresh(refreshToken);
-      await _persist(body);
-      return true;
-    } on HelixError catch (e) {
-      if (e.isNetwork) {
-        // offline but inside the ceiling: trust stored roles until online.
-        roles = await _readRoles();
-        permissions = await _readPermissions();
-        userId = await _store.read(StoreKeys.userId);
-        _consentSatisfied = (await _store.read(StoreKeys.consentVersion)) != null;
-        return await _withinOfflineCeiling();
+      if (_clerk.isSignedIn) {
+        _accessToken = _clerk.sessionToken;
+        completer.complete(true);
+      } else {
+        _onAuthLost();
+        completer.complete(false);
       }
-      return false;
+    } catch (_) {
+      completer.complete(false);
     }
+    _refreshInFlight = null;
+    return completer.future;
   }
 
-  Future<bool> _withinOfflineCeiling() async {
-    final lastAuthMs = int.tryParse(await _store.read(StoreKeys.lastAuthAt) ?? '');
-    if (lastAuthMs == null) return false;
-    final lastAuth = DateTime.fromMillisecondsSinceEpoch(lastAuthMs, isUtc: true);
-    final offlineUntilMs = int.tryParse(await _store.read(StoreKeys.offlineUntil) ?? '');
-    final serverUntil = offlineUntilMs != null
-        ? DateTime.fromMillisecondsSinceEpoch(offlineUntilMs, isUtc: true)
-        : lastAuth.add(const Duration(days: 365));
-    final clientUntil = lastAuth.add(Duration(hours: Policy.deviceOfflineMaxHours));
-    // A clock moved backwards reads as expired — fail closed.
-    final nowUtc = DateTime.now().toUtc();
-    if (nowUtc.isBefore(lastAuth.subtract(const Duration(minutes: 5)))) return false;
-    return nowUtc.isBefore(serverUntil) && nowUtc.isBefore(clientUntil);
-  }
+  Completer<bool>? _refreshInFlight;
 
-  /// Set by the composition root to ConnectivityService.
-  Future<bool> Function()? isOnlineProbe;
-  Future<bool> get _isOnline => isOnlineProbe?.call() ?? Future.value(true);
+  void _onAuthLost() {
+    status = AuthStatus.signedOut;
+    notifyListeners();
+  }
 
   // — login flows —
 
-  /// Returns the session on success. When the backend answers 200
-  /// `{mfa_required, mfa_challenge_token}` the status moves to needsMfa and
-  /// null is returned.
   Future<SessionBody?> login({
     String? email,
     String? phone,
     required String password,
     String? deviceIdHash,
   }) async {
-    final body = <String, dynamic>{'password': password};
-    if (email != null) body['email'] = email;
-    if (phone != null) body['phone'] = phone;
-    if (deviceIdHash != null) body['device_id_hash'] = deviceIdHash;
+    final identifier = email ?? phone ?? '';
     try {
-      final raw = await _api.write<Map<String, dynamic>>(
-        'POST',
-        'auth/login',
-        body: body,
-        parse: (b) => b as Map<String, dynamic>,
-      );
-      if (raw['mfa_required'] == true) {
-        _pendingChallengeToken = raw['mfa_challenge_token'] as String?;
-        status = AuthStatus.needsMfa;
-        notifyListeners();
-        return null;
-      }
-      final session = SessionBody.fromJson(raw);
-      await _persist(session);
+      final result = await _clerk.signIn(identifier: identifier, password: password);
+      _pendingChallengeToken = null;
+      await _persistFromClerk(result);
       _advanceAfterAuth();
-      return session;
+      return SessionBody(
+        accessToken: result.sessionToken,
+        accessTokenExpiresAt: DateTime.now().add(const Duration(hours: 1)),
+        refreshToken: '',
+        refreshTokenExpiresAt: DateTime.now().add(const Duration(days: 7)),
+        sessionId: result.sessionToken,
+        userId: result.userId,
+        email: result.email,
+        phone: phone,
+        roles: result.roles,
+        permissions: result.permissions,
+        locale: 'en',
+      );
     } on HelixError catch (e) {
       if (e.code == 'ACCOUNT_SUSPENDED') {
         status = AuthStatus.suspended;
@@ -221,17 +181,80 @@ class SessionService extends ChangeNotifier {
     }
   }
 
+  /// MFA: verify a code during sign-in. Clerk handles MFA natively.
   Future<SessionBody> verifyMfa(String code) async {
-    final session = await _api.write<SessionBody>(
-      'POST',
-      'auth/mfa/verify',
-      body: {'mfa_challenge_token': _pendingChallengeToken, 'code': code},
-      parse: (b) => SessionBody.fromJson(b as Map<String, dynamic>),
+    if (_pendingChallengeToken == null) {
+      throw HelixError.fromProblem({'error_code': 'NO_MFA_CHALLENGE'}, 400);
+    }
+    await _clerk.mfaVerify(strategy: 'totp', code: code);
+    final token = _clerk.sessionToken;
+    if (token == null) {
+      throw HelixError.fromProblem({'error_code': 'MFA_VERIFY_FAILED'}, 401);
+    }
+    _accessToken = token;
+    await _store.write(StoreKeys.refreshToken, token);
+    final session = SessionBody(
+      accessToken: token,
+      accessTokenExpiresAt: DateTime.now().add(const Duration(hours: 1)),
+      refreshToken: token,
+      refreshTokenExpiresAt: DateTime.now().add(const Duration(days: 7)),
+      sessionId: token,
+      userId: userId ?? '',
+      email: '',
+      phone: null,
+      roles: roles,
+      permissions: permissions,
+      locale: 'en',
     );
     _pendingChallengeToken = null;
-    await _persist(session);
     _advanceAfterAuth();
     return session;
+  }
+
+  /// Company creation + sign-up via Clerk.
+  Future<SessionBody> signup({
+    required String companyName,
+    required String fullName,
+    required String email,
+    String? phone,
+    required String password,
+  }) async {
+    final parts = fullName.trim().split(' ');
+    final firstName = parts.first;
+    final lastName = parts.length > 1 ? parts.skip(1).join(' ') : '';
+    final result = await _clerk.signUp(
+      emailAddress: email,
+      password: password,
+      firstName: firstName,
+      lastName: lastName,
+    );
+    await _persistFromClerk(result);
+    _advanceAfterAuth();
+    return SessionBody(
+      accessToken: result.sessionToken,
+      accessTokenExpiresAt: DateTime.now().add(const Duration(hours: 1)),
+      refreshToken: '',
+      refreshTokenExpiresAt: DateTime.now().add(const Duration(days: 7)),
+      sessionId: result.sessionToken,
+      userId: result.userId,
+      email: result.email,
+      phone: phone,
+      roles: result.roles,
+      permissions: result.permissions,
+      locale: 'en',
+    );
+  }
+
+  Future<void> _persistFromClerk(ClerkAuthResult result) async {
+    _accessToken = result.sessionToken;
+    roles = result.roles;
+    permissions = result.permissions;
+    userId = result.userId;
+    final now = DateTime.now().toUtc();
+    await _store.write(StoreKeys.lastAuthAt, '${now.millisecondsSinceEpoch}');
+    await _store.write(StoreKeys.roles, jsonEncode(result.roles));
+    await _store.write(StoreKeys.permissions, jsonEncode(result.permissions));
+    await _store.write(StoreKeys.userId, result.userId);
   }
 
   void _advanceAfterAuth() {
@@ -243,117 +266,9 @@ class SessionService extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<SessionBody> signup({
-    required String companyName,
-    required String fullName,
-    required String email,
-    String? phone,
-    required String password,
-  }) async {
-    final session = await _api.write<SessionBody>(
-      'POST',
-      'auth/signup',
-      body: {
-        'company_name': companyName,
-        'full_name': fullName,
-        'email': email,
-        'phone': ?phone,
-        'password': password,
-      },
-      parse: (b) => (b as Map<String, dynamic>)['session'] != null
-          ? SessionBody.fromJson(b['session'] as Map<String, dynamic>)
-          : SessionBody.fromJson(b),
-    );
-    await _persist(session);
-    _advanceAfterAuth();
-    return session;
-  }
-
-  Future<void> _persist(SessionBody body) async {
-    _accessToken = body.accessToken;
-    roles = body.roles;
-    permissions = body.permissions;
-    userId = body.userId;
-    final now = DateTime.now().toUtc();
-    await _store.write(StoreKeys.refreshToken, body.refreshToken);
-    await _store.write(StoreKeys.lastAuthAt, '${now.millisecondsSinceEpoch}');
-    await _store.write(StoreKeys.roles, jsonEncode(body.roles));
-    await _store.write(StoreKeys.permissions, jsonEncode(body.permissions));
-    await _store.write(StoreKeys.userId, body.userId);
-    // The device-bound refresh widens the offline window server-side.
-    await _refreshDeviceToken();
-  }
-
-  Future<void> _refreshDeviceToken() async {
-    try {
-      final res = await _api.write<Map<String, dynamic>>(
-        'POST',
-        'auth/devices/refresh',
-        body: const {},
-        idempotent: false,
-        parse: (b) => (b as Map<String, dynamic>),
-      );
-      final until = DateTime.tryParse(res['offline_until']?.toString() ?? '');
-      if (until != null) {
-        await _store.write(StoreKeys.offlineUntil, '${until.millisecondsSinceEpoch}');
-      }
-      final refresh = res['refresh_token']?.toString();
-      if (refresh != null && refresh.isNotEmpty) {
-        await _store.write(StoreKeys.refreshToken, refresh);
-      }
-    } on HelixError {
-      // best effort — the session refresh token still works
-    }
-  }
-
-  /// Single-flight refresh. Returns false when the session is gone.
-  Future<bool> refreshIfNeeded() async {
-    if (_refreshInFlight != null) return _refreshInFlight!.future;
-    final completer = Completer<bool>();
-    _refreshInFlight = completer;
-    final refreshToken = await _store.read(StoreKeys.refreshToken);
-    if (refreshToken == null) {
-      _refreshInFlight = null;
-      _onAuthLost();
-      return false;
-    }
-    try {
-      final body = await _refresh(refreshToken);
-      await _persist(body);
-      completer.complete(true);
-    } on HelixError catch (e) {
-      if (e.code == 'UNAUTHENTICATED' || e.code == 'SESSION_REVOKED') {
-        _refreshInFlight = null;
-        _onAuthLost();
-        completer.complete(false);
-        return false;
-      }
-      completer.complete(false);
-    } catch (_) {
-      completer.complete(false);
-    }
-    _refreshInFlight = null;
-    return completer.future;
-  }
-
-  Completer<bool>? _refreshInFlight;
-
-  Future<SessionBody> _refresh(String refreshToken) => _api.write<SessionBody>(
-        'POST',
-        'auth/refresh',
-        body: {'refresh_token': refreshToken},
-        idempotent: false,
-        parse: (b) => SessionBody.fromJson(b as Map<String, dynamic>),
-      );
-
-  void _onAuthLost() {
-    status = AuthStatus.signedOut;
-    notifyListeners();
-  }
-
   Future<void> signOut() async {
     try {
-      await _api.write<Map<String, dynamic>>('POST', 'auth/logout', body: const {}, parse: (b) => b as Map<String, dynamic>);
+      await _clerk.signOut();
     } on HelixError {
       // best effort
     }
@@ -413,7 +328,6 @@ class SessionService extends ChangeNotifier {
         notifyListeners();
       }
     } on HelixError {
-      // offline: keep the local record
       _consentSatisfied = (await _store.read(StoreKeys.consentVersion)) != null;
     }
   }
@@ -424,21 +338,12 @@ class SessionService extends ChangeNotifier {
     final salt = newUuid();
     await _store.write(StoreKeys.pinSalt, salt);
     await _store.write(StoreKeys.pinHash, sha256Hex('$salt:$pin'));
-    try {
-      await _api.write<Map<String, dynamic>>(
-        'POST',
-        'auth/devices/pin',
-        body: const {},
-        parse: (b) => b as Map<String, dynamic>,
-      );
-    } on HelixError {
-      // server only records that a PIN exists; local remains authoritative offline
-    }
   }
 
   Future<bool> verifyPin(String pin) async {
     final failures = int.tryParse(await _store.read(StoreKeys.pinFailures) ?? '0') ?? 0;
-    final lockedUntilMs = int.tryParse(await _store.read(StoreKeys.pinLockedUntil) ?? '');
+    final lockedUntilRaw = await _store.read(StoreKeys.pinLockedUntil);
+    final lockedUntilMs = lockedUntilRaw != null ? int.tryParse(lockedUntilRaw) : null;
     if (lockedUntilMs != null &&
         DateTime.now().toUtc().isBefore(DateTime.fromMillisecondsSinceEpoch(lockedUntilMs, isUtc: true))) {
       return false;
@@ -460,13 +365,7 @@ class SessionService extends ChangeNotifier {
     return false;
   }
 
-  Future<void> completePinUnlock() async {
-    status = _consentSatisfied ? AuthStatus.signedIn : AuthStatus.needsConsent;
-    notifyListeners();
-  }
-
-  // — devices —
-
+  /// Register this device with the backend (called after login).
   Future<void> registerDevice({
     required String deviceIdHash,
     String? label,
@@ -480,36 +379,61 @@ class SessionService extends ChangeNotifier {
       'auth/devices',
       body: {
         'device_id_hash': deviceIdHash,
-        'device_label': ?label,
-        'device_model': ?model,
-        'os_version': ?osVersion,
-        'app_version': ?appVersion,
-        'push_token': ?pushToken,
+        'device_label': label,
+        'device_model': model,
+        'os_version': osVersion,
+        'app_version': appVersion,
+        'push_token': pushToken,
       },
       parse: (b) => b as Map<String, dynamic>,
     );
     await _store.write(StoreKeys.deviceIdHash, deviceIdHash);
   }
 
+  Future<void> completePinUnlock() async {
+    status = _consentSatisfied ? AuthStatus.signedIn : AuthStatus.needsConsent;
+    notifyListeners();
+  }
+
   // — helpers —
-
-  Future<List<String>> _readRoles() async {
-    final raw = await _store.read(StoreKeys.roles);
-    if (raw == null) return const [];
-    return (jsonDecode(raw) as List).cast<String>();
-  }
-
-  Future<List<String>> _readPermissions() async {
-    final raw = await _store.read(StoreKeys.permissions);
-    if (raw == null) return const [];
-    return (jsonDecode(raw) as List).cast<String>();
-  }
 
   SharedPreferences? _prefs;
   void attachPrefs(SharedPreferences prefs) => _prefs = prefs;
 
-  /// Persisted shell choice, re-validated against the session's roles.
   String? get persistedShell => _prefs?.getString('helix.active_shell');
 
   Future<void> persistShell(String shell) async => _prefs?.setString('helix.active_shell', shell);
+}
+
+/// Kept for backward compatibility with ApiClient and screens that pattern-match
+/// on SessionBody fields.
+class SessionBody {
+  SessionBody({
+    required this.accessToken,
+    required this.accessTokenExpiresAt,
+    required this.refreshToken,
+    required this.refreshTokenExpiresAt,
+    required this.sessionId,
+    required this.userId,
+    required this.email,
+    required this.phone,
+    required this.roles,
+    required this.permissions,
+    required this.locale,
+  });
+
+  final String accessToken;
+  final DateTime accessTokenExpiresAt;
+  final String refreshToken;
+  final DateTime refreshTokenExpiresAt;
+  final String sessionId;
+  final String userId;
+  final String? email;
+  final String? phone;
+  final List<String> roles;
+  final List<String> permissions;
+  final String locale;
+
+  bool get hasDriverRole => roles.contains('DRIVER');
+  bool get hasAdminRole => roles.any(adminRoles.contains);
 }

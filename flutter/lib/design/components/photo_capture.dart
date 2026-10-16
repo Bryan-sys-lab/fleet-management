@@ -88,7 +88,7 @@ class _PhotoCaptureState extends State<PhotoCapture> {
             child: QuietButton(
               label: _failed ? 'Camera unavailable' : 'Take photo',
               onPressed: _failed ? null : _openCamera,
-              icon: const Icon(Icons.photo_camera_outlined, size: 20, color: AppColors.textSecondary),
+              icon: Icon(Icons.photo_camera_outlined, size: 20, color: AppColors.textSecondary),
             ),
           ),
         if (_ready && _controller != null)
@@ -110,7 +110,7 @@ class _PhotoCaptureState extends State<PhotoCapture> {
             padding: const EdgeInsets.only(top: AppSpace.s2),
             child: Row(
               children: [
-                const Icon(Icons.check_circle_outline, color: AppColors.statusOk, size: 18),
+                Icon(Icons.check_circle_outline, color: AppColors.statusOk, size: 18),
                 const SizedBox(width: AppSpace.s2),
                 HelixText('Captured', style: TypeScale.caption(AppColors.statusOk)),
               ],

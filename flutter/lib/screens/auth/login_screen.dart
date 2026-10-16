@@ -151,7 +151,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   const SizedBox(height: AppSpace.s3),
                   QuietButton(
                     label: 'Design preview (offline)',
-                    icon: const Icon(Icons.palette_outlined, size: 20, color: AppColors.adminAccent),
+                    icon: Icon(Icons.palette_outlined, size: 20, color: AppColors.adminAccent),
                     onPressed: () async {
                       await ref.read(sessionProvider).enterPreview();
                     },

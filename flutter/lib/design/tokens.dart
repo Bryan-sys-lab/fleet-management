@@ -2,56 +2,125 @@ import 'package:flutter/material.dart';
 
 /// Design tokens — "Field Instrument" (see flutter/.design/helix-flutter-app/DESIGN_TOKENS.md).
 /// Single source of truth: components reference these, never raw values.
+///
+/// Dark mode: every color resolves through the `dark` flag, flipped by
+/// `AppColors.setDark(bool)`. The whole tree rebuilds on change because the
+/// app theme key changes. Component call sites stay `AppColors.x` — no
+/// per-site migration required. Compile-time `const` call sites that pass
+/// an AppColors color directly (e.g. `const Icon(..., color: AppColors.x)`)
+/// are the only breakage and must drop `const`.
 class AppColors {
   AppColors._();
 
-  // Light — "Daylight Field" (shipped default for both shells)
-  static const bg = Color(0xFFF6F3EC);
-  static const surface = Color(0xFFFDFCF7);
-  static const surfaceSunk = Color(0xFFEFEBE1);
-  static const surfaceInverse = Color(0xFF0F172A); // logo navy
-  static const text = Color(0xFF191713);
-  static const textSecondary = Color(0xFF57503F);
-  static const textTertiary = Color(0xFF6E6759);
-  static const textInverse = Color(0xFFF6F3EC);
-  static const line = Color(0xFFD8D2C4);
-  static const lineStrong = Color(0xFFB7AF9C);
+  /// Flip between light ("Daylight Field") and dark ("Night Ops").
+  static bool dark = false;
 
-  // Brand strands (the Helix logo's twin strands)
-  static const brandNavy = Color(0xFF0F172A);
-  static const accent = Color(0xFF06B6D4); // driver strand — fills/indicators
-  static const accentText = Color(0xFF0E7490); // AA-safe tone of the same strand
-  static const accentPressed = Color(0xFF0891B2);
-  static const accentQuiet = Color(0xFFDFF3F8);
-  static const adminAccent = Color(0xFF6D28D9); // admin strand
-  static const adminAccentQuiet = Color(0xFFEEE9FD);
-  static const adminAccentPressed = Color(0xFF5B21B6);
+  // ── Light palette (const backing values) ─────────────────────────────
+
+  static const Color _lBg = Color(0xFFF6F3EC);
+  static const Color _lSurface = Color(0xFFFDFCF7);
+  static const Color _lSurfaceSunk = Color(0xFFEFEBE1);
+  static const Color _lSurfaceInverse = Color(0xFF0F172A); // logo navy
+  static const Color _lText = Color(0xFF191713);
+  static const Color _lTextSecondary = Color(0xFF57503F);
+  static const Color _lTextTertiary = Color(0xFF6E6759);
+  static const Color _lTextInverse = Color(0xFFF6F3EC);
+  static const Color _lLine = Color(0xFFD8D2C4);
+  static const Color _lLineStrong = Color(0xFFB7AF9C);
+
+  // Brand strands
+  static const Color _lBrandNavy = Color(0xFF0F172A);
+  static const Color _lAccent = Color(0xFF06B6D4); // driver strand — fills/indicators
+  static const Color _lAccentText = Color(0xFF0E7490); // AA-safe tone of the same strand
+  static const Color _lAccentPressed = Color(0xFF0891B2);
+  static const Color _lAccentQuiet = Color(0xFFDFF3F8);
+  static const Color _lAdminAccent = Color(0xFF6D28D9); // admin strand
+  static const Color _lAdminAccentQuiet = Color(0xFFEEE9FD);
+  static const Color _lAdminAccentPressed = Color(0xFF5B21B6);
 
   // Status (N5 semantics — colour + glyph + word, never colour alone)
-  static const statusOk = Color(0xFF166B3F);
-  static const statusDanger = Color(0xFF9E2B1F);
-  static const statusWarn = Color(0xFF8A5A00);
-  static const statusWarnFill = Color(0xFFF5B400);
-  static const statusInfo = Color(0xFF2A5EA8);
-  static const statusNeutral = Color(0xFF5C6468);
-  static const statusPlum = Color(0xFF7A1F5C);
-  static const statusAmber = Color(0xFFA85500);
-  static const statusOlive = Color(0xFF7A6100);
+  static const Color _lStatusOk = Color(0xFF166B3F);
+  static const Color _lStatusDanger = Color(0xFF9E2B1F);
+  static const Color _lStatusWarn = Color(0xFF8A5A00);
+  static const Color _lStatusWarnFill = Color(0xFFF5B400);
+  static const Color _lStatusInfo = Color(0xFF2A5EA8);
+  static const Color _lStatusNeutral = Color(0xFF5C6468);
+  static const Color _lStatusPlum = Color(0xFF7A1F5C);
+  static const Color _lStatusAmber = Color(0xFFA85500);
+  static const Color _lStatusOlive = Color(0xFF7A6100);
 
-  // Dark — "Night Ops" (tokenised, reserved for admin night use)
-  static const dBg = Color(0xFF141310);
-  static const dSurface = Color(0xFF211F19);
-  static const dSurfaceSunk = Color(0xFF0C0B09);
-  static const dText = Color(0xFFECE9E0);
-  static const dTextSecondary = Color(0xFFA8A394);
-  static const dLine = Color(0xFF3A372E);
-  static const dAccent = Color(0xFF22D3EE);
-  static const dAdminAccent = Color(0xFFA78BFA);
-  static const dStatusOk = Color(0xFF5CB87E);
-  static const dStatusDanger = Color(0xFFE0776A);
-  static const dStatusWarn = Color(0xFFD9A22E);
-  static const dStatusInfo = Color(0xFF7FA8E8);
-  static const dStatusNeutral = Color(0xFF8A9189);
+  // ── Dark palette ("Night Ops") ───────────────────────────────────────
+
+  static const Color _dBg = Color(0xFF141310);
+  static const Color _dSurface = Color(0xFF211F19);
+  static const Color _dSurfaceSunk = Color(0xFF0C0B09);
+  static const Color _dSurfaceInverse = Color(0xFFF6F3EC);
+  static const Color _dText = Color(0xFFECE9E0);
+  static const Color _dTextSecondary = Color(0xFFA8A394);
+  static const Color _dTextTertiary = Color(0xFF6E6759);
+  static const Color _dTextInverse = Color(0xFF141310);
+  static const Color _dLine = Color(0xFF3A372E);
+  static const Color _dLineStrong = Color(0xFF57503F);
+
+  static const Color _dAccent = Color(0xFF22D3EE);
+  static const Color _dAccentText = Color(0xFF0E7490);
+  static const Color _dAccentPressed = Color(0xFF0891B2);
+  static const Color _dAccentQuiet = Color(0xFF1B2A30);
+  static const Color _dAdminAccent = Color(0xFFA78BFA);
+  static const Color _dAdminAccentQuiet = Color(0xFF2A1F42);
+  static const Color _dAdminAccentPressed = Color(0xFF8B5CF6);
+
+  static const Color _dStatusOk = Color(0xFF5CB87E);
+  static const Color _dStatusDanger = Color(0xFFE0776A);
+  static const Color _dStatusWarn = Color(0xFFD9A22E);
+  static const Color _dStatusWarnFill = Color(0xFFF5B400);
+  static const Color _dStatusInfo = Color(0xFF7FA8E8);
+  static const Color _dStatusNeutral = Color(0xFF8A9189);
+  static const Color _dStatusPlum = Color(0xFFB86A94);
+  static const Color _dStatusAmber = Color(0xFFF0A03E);
+  static const Color _dStatusOlive = Color(0xFFC4A45B);
+
+  // ── Public accessors (light unless AppColors.dark == true) ───────────
+
+  static Color get bg => dark ? _dBg : _lBg;
+  static Color get surface => dark ? _dSurface : _lSurface;
+  static Color get surfaceSunk => dark ? _dSurfaceSunk : _lSurfaceSunk;
+  static Color get surfaceInverse => dark ? _dSurfaceInverse : _lSurfaceInverse;
+  static Color get text => dark ? _dText : _lText;
+  static Color get textSecondary => dark ? _dTextSecondary : _lTextSecondary;
+  static Color get textTertiary => dark ? _dTextTertiary : _lTextTertiary;
+  static Color get textInverse => dark ? _dTextInverse : _lTextInverse;
+  static Color get line => dark ? _dLine : _lLine;
+  static Color get lineStrong => dark ? _dLineStrong : _lLineStrong;
+
+  static Color get brandNavy => _lBrandNavy; // brand moment, never flips
+  static Color get accent => dark ? _dAccent : _lAccent;
+  static Color get accentText => dark ? _dAccentText : _lAccentText;
+  static Color get accentPressed => dark ? _dAccentPressed : _lAccentPressed;
+  static Color get accentQuiet => dark ? _dAccentQuiet : _lAccentQuiet;
+  static Color get adminAccent => dark ? _dAdminAccent : _lAdminAccent;
+  static Color get adminAccentQuiet => dark ? _dAdminAccentQuiet : _lAdminAccentQuiet;
+  static Color get adminAccentPressed => dark ? _dAdminAccentPressed : _lAdminAccentPressed;
+
+  static Color get statusOk => dark ? _dStatusOk : _lStatusOk;
+  static Color get statusDanger => dark ? _dStatusDanger : _lStatusDanger;
+  static Color get statusWarn => dark ? _dStatusWarn : _lStatusWarn;
+  static Color get statusWarnFill => dark ? _dStatusWarnFill : _lStatusWarnFill;
+  static Color get statusInfo => dark ? _dStatusInfo : _lStatusInfo;
+  static Color get statusNeutral => dark ? _dStatusNeutral : _lStatusNeutral;
+  static Color get statusPlum => dark ? _dStatusPlum : _lStatusPlum;
+  static Color get statusAmber => dark ? _dStatusAmber : _lStatusAmber;
+  static Color get statusOlive => dark ? _dStatusOlive : _lStatusOlive;
+
+  // ── Materials (frosted chrome) ───────────────────────────────────────
+
+  /// Translucent backing for navigation bar / tab bar (content scrolls under).
+  static Color get frostChrome => dark ? _dSurface.withValues(alpha: 0.88) : _lSurface.withValues(alpha: 0.88);
+  static Color get frostSheet => dark ? _dSurface.withValues(alpha: 0.92) : _lSurface.withValues(alpha: 0.92);
+  static const double blurChrome = 20.0;
+  static const double blurSheet = 16.0;
+
+  static void setDark(bool value) => dark = value;
 }
 
 class AppSpace {
@@ -89,7 +158,7 @@ class AppType {
   static const bodyPhone = 16.0, bodyAdmin = 17.0;
   static const captionPhone = 13.0, captionAdmin = 14.0;
 
-  static const fontDisplay = 'BarlowSemiCondensed';
+  static const fontDisplay = 'Barlow Semi Condensed';
   static const fontBody = 'Barlow';
   static const fontMono = 'IBMPlexMono';
 

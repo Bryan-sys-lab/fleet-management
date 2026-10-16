@@ -222,6 +222,16 @@ class Repository {
         parse: (b) => b as Map<String, dynamic>,
       );
 
+  Future<Map<String, dynamic>> createTrainingLesson(Map<String, dynamic> body) => _api.write(
+        'POST',
+        'training/lessons',
+        body: body,
+        parse: (b) => b as Map<String, dynamic>,
+      );
+
+  Future<Map<String, dynamic>> trainingCourses({String? cursor}) =>
+      _api.get('training/courses', query: cursor == null ? null : {'cursor': cursor}, parse: (b) => b as Map<String, dynamic>);
+
   Future<Map<String, dynamic>> createMaintenance(Map<String, dynamic> body) =>
       _api.write('POST', 'maintenance/work-orders', body: body, parse: (b) => b as Map<String, dynamic>);
 

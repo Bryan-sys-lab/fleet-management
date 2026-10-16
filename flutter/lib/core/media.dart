@@ -101,6 +101,7 @@ class MediaService {
   // ── slot tokens used by the forms (substituted at send time) ──
   static const slotReceipt = 'media://receipt';
   static const slotGauge = 'media://gauge';
+  static const slotPump = 'media://pump';
   static const slotClockIn = 'media://clock_in';
   static const slotClockOut = 'media://clock_out';
   static const slotHook = 'media://hook';

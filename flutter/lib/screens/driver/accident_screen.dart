@@ -146,7 +146,7 @@ class _AccidentScreenState extends ConsumerState<AccidentScreen> {
               ),
               const SizedBox(height: AppSpace.s2),
               HelixText(strings.t('accident.maydayHelp'), style: TypeScale.caption(AppColors.textSecondary)),
-              const Divider(height: 40, color: AppColors.line),
+              Divider(height: 40, color: AppColors.line),
               HelixText(strings.t('accident.severity'), style: TypeScale.caption(AppColors.textSecondary)),
               const SizedBox(height: AppSpace.s2),
               Wrap(

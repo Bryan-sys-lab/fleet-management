@@ -119,7 +119,7 @@ class _PinScreenState extends ConsumerState<PinScreen> {
             backgroundColor: AppColors.surface,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(AppRadius.control),
-              side: const BorderSide(color: AppColors.line),
+              side: BorderSide(color: AppColors.line),
             ),
           ),
           child: HelixText(label, style: TypeScale.title(AppColors.text)),

@@ -12,6 +12,7 @@ class HelixCard extends StatelessWidget {
     this.onTap,
     this.padding = AppSpace.s4,
     this.semanticsLabel,
+    this.heroTag,
   });
 
   final Widget child;
@@ -19,6 +20,7 @@ class HelixCard extends StatelessWidget {
   final VoidCallback? onTap;
   final double padding;
   final String? semanticsLabel;
+  final String? heroTag;
 
   @override
   Widget build(BuildContext context) {
@@ -32,7 +34,7 @@ class HelixCard extends StatelessWidget {
           border: Border.all(color: AppColors.line),
           borderRadius: BorderRadius.circular(AppRadius.card),
         ),
-        child: child,
+        child: heroTag == null ? child : Hero(tag: heroTag!, child: child),
       ),
     );
     if (onTap == null) return content;
@@ -81,7 +83,7 @@ class Section extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               for (var i = 0; i < children.length; i++) ...[
-                if (i > 0) const Divider(height: 1, color: AppColors.line),
+                if (i > 0) Divider(height: 1, color: AppColors.line),
                 children[i],
               ],
             ],

@@ -15,8 +15,8 @@ class HoldToConfirm extends StatefulWidget {
     required this.hold,
     this.holdingLabel,
     this.reducedMotion = false,
-    this.fillColor = AppColors.statusDanger,
-    this.textColor = AppColors.textInverse,
+    this.fillColor,
+    this.textColor,
     this.height = AppTarget.touchPhone + 8,
   });
 
@@ -25,8 +25,8 @@ class HoldToConfirm extends StatefulWidget {
   final Duration hold;
   final String? holdingLabel;
   final bool reducedMotion;
-  final Color fillColor;
-  final Color textColor;
+  final Color? fillColor;
+  final Color? textColor;
   final double height;
 
   @override
@@ -99,11 +99,11 @@ class _HoldToConfirmState extends State<HoldToConfirm> {
         onTap: _holding ? _cancel : null,
         child: Container(
           height: widget.height,
-          decoration: BoxDecoration(
-            color: AppColors.surfaceSunk,
-            borderRadius: BorderRadius.circular(AppRadius.control),
-            border: Border.all(color: widget.fillColor),
-          ),
+            decoration: BoxDecoration(
+              color: AppColors.surfaceSunk,
+              borderRadius: BorderRadius.circular(AppRadius.control),
+              border: Border.all(color: widget.fillColor ?? AppColors.statusDanger),
+            ),
           child: Stack(
             children: [
               FractionallySizedBox(
@@ -119,7 +119,9 @@ class _HoldToConfirmState extends State<HoldToConfirm> {
               Center(
                 child: HelixText(
                   _holding ? (widget.holdingLabel ?? 'Keep holding…') : widget.label,
-                  style: TypeScale.button(_progress > 0.5 ? widget.textColor : widget.fillColor),
+                  style: TypeScale.button(
+                    _progress > 0.5 ? (widget.textColor ?? AppColors.textInverse) : (widget.fillColor ?? AppColors.statusDanger),
+                  ),
                 ),
               ),
             ],
@@ -145,16 +147,18 @@ class _HoldToConfirmState extends State<HoldToConfirm> {
         },
         child: Container(
           height: widget.height,
-          decoration: BoxDecoration(
-            color: _armed ? widget.fillColor : AppColors.surfaceSunk,
-            borderRadius: BorderRadius.circular(AppRadius.control),
-            border: Border.all(color: widget.fillColor),
-          ),
+            decoration: BoxDecoration(
+              color: _armed ? (widget.fillColor ?? AppColors.statusDanger) : AppColors.surfaceSunk,
+              borderRadius: BorderRadius.circular(AppRadius.control),
+              border: Border.all(color: widget.fillColor ?? AppColors.statusDanger),
+            ),
           alignment: Alignment.center,
-          child: HelixText(
-            _armed ? 'Tap again to confirm' : widget.label,
-            style: TypeScale.button(_armed ? widget.textColor : widget.fillColor),
-          ),
+            child: HelixText(
+              _armed ? 'Tap again to confirm' : widget.label,
+              style: TypeScale.button(
+                _armed ? (widget.textColor ?? AppColors.textInverse) : (widget.fillColor ?? AppColors.statusDanger),
+              ),
+            ),
         ),
       ),
     );

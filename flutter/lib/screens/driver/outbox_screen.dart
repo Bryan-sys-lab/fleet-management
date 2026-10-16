@@ -7,6 +7,7 @@ import '../../design/components/buttons.dart';
 import '../../design/components/card.dart';
 import '../../design/components/hold_to_confirm.dart';
 import '../../design/components/screen.dart';
+import '../../design/components/swipe_row.dart';
 import '../../design/components/text.dart';
 import '../../design/components/status_badge.dart';
 import '../../design/components/states.dart';
@@ -47,10 +48,20 @@ class _OutboxScreenState extends ConsumerState<OutboxScreen> {
     await _load();
   }
 
+  Future<void> _retryItem(QueueItem item) async {
+    await ref.read(containerProvider).queue.retry(item.id!);
+    await ref.read(containerProvider).queue.drain();
+    await _load();
+  }
+
+  Future<void> _discardItem(QueueItem item) async {
+    await ref.read(containerProvider).queue.discard(item.id!);
+    await _load();
+  }
+
   @override
   Widget build(BuildContext context) {
     final strings = context.s;
-    final queue = ref.watch(containerProvider).queue;
     return Scaffold(
       appBar: AppBar(title: HelixText(strings.t('outbox.title'), style: TypeScale.title(AppColors.text))),
       body: Screen(
@@ -65,28 +76,37 @@ class _OutboxScreenState extends ConsumerState<OutboxScreen> {
                     children: [
                       QuietButton(
                         label: strings.t('outbox.flush'),
-                        icon: const Icon(Icons.send, size: 20, color: AppColors.textSecondary),
+                        icon: Icon(Icons.send, size: 20, color: AppColors.textSecondary),
                         onPressed: _sendNow,
                       ),
                       const SizedBox(height: AppSpace.s4),
                       for (final item in _items)
                         Padding(
                           padding: const EdgeInsets.only(bottom: AppSpace.s3),
-                          child: _QueueCard(
-                            item: item,
-                            onRetry: () async {
-                              await queue.retry(item.id!);
-                              await queue.drain();
-                              await _load();
-                            },
-                            onEdit: () async {
-                              await Navigator.of(context).pushNamed('/driver/outbox/${item.id}/edit');
-                              await _load();
-                            },
-                            onDiscard: () async {
-                              await queue.discard(item.id!);
-                              await _load();
-                            },
+                          child: SwipeActionRow(
+                            actions: [
+                              SwipeAction(
+                                label: strings.t('outbox.retry'),
+                                icon: Icons.repeat,
+                                color: AppColors.accent,
+                                onPressed: () async => await _retryItem(item),
+                              ),
+                              SwipeAction(
+                                label: strings.t('outbox.discard'),
+                                icon: Icons.delete_outline,
+                                color: AppColors.statusDanger,
+                                onPressed: () async => await _discardItem(item),
+                              ),
+                            ],
+                            child: _QueueCard(
+                              item: item,
+                              onRetry: () async => await _retryItem(item),
+                              onEdit: () async {
+                                await Navigator.of(context).pushNamed('/driver/outbox/${item.id}/edit');
+                                await _load();
+                              },
+                              onDiscard: () async => await _discardItem(item),
+                            ),
                           ),
                         ),
                     ],
@@ -139,7 +159,6 @@ class _QueueCard extends StatelessWidget {
               const Spacer(),
               SizedBox(
                 width: 120,
-                height: 40,
                 child: HoldToConfirm(
                   label: context.s.t('outbox.discard'),
                   onConfirmed: onDiscard,

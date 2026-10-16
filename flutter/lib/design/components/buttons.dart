@@ -178,13 +178,13 @@ class _DangerButtonState extends State<DangerButton> {
               color: !enabled
                   ? AppColors.surfaceSunk
                   : _pressed
-                      ? const Color(0xFF7C2118)
+                      ? AppColors.statusDanger
                       : AppColors.statusDanger,
               borderRadius: BorderRadius.circular(AppRadius.control),
             ),
             alignment: Alignment.center,
             child: widget.busy
-                ? const SizedBox(
+                ? SizedBox(
                     height: 20,
                     width: 20,
                     child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.textInverse),

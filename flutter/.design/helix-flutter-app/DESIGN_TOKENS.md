@@ -145,16 +145,24 @@ are `mono-data` right-aligned.
 
 | Token | Value | Use |
 |---|---|---|
-| `dur-press` | 120ms | Button/card press feedback |
+| `dur-press` | 120ms | Button/card press feedback (`scale(0.97)`) |
 | `dur-fade` | 200ms | Toasts, banners, skeleton shimmer |
 | `dur-sheet` | 280ms | Bottom sheets, vehicle drawer |
 | `dur-hold` | 2000ms | Mayday/hold-to-confirm fill (product policy B-06) |
-| `ease-out` | `cubic-bezier(0.23, 1, 0.32, 1)` | Entrances, reveals |
-| `ease-in-out` | `cubic-bezier(0.77, 0, 0.175, 1)` | Position/state moves |
-| `ease-standard` | `cubic-bezier(0.4, 0, 0.2, 1)` | Defaults |
+| `ease-out` | `cubic-bezier(0.23, 1, 0.32, 1)` | Entrances, reveals (non-gesture UI) |
+| `ease-in-out` | `cubic-bezier(0.77, 0, 0.175, 1)` | Position/state moves (non-gesture UI) |
+| `ease-standard` | `cubic-bezier(0.4, 0, 0.2, 1)` | Defaults (non-gesture UI) |
+| `spring-ui` | damping 1.0 / response 0.35 | Anything a finger touches: buttons, sheets, toggles — critically damped, no overshoot |
+| `spring-drawer` | damping 0.8 / response 0.30 | Sheets, drawers, momentum releases — slight physical overshoot |
+| `spring-flick` | damping 0.75 / response 0.40 | Throw-style flicks to a projected rest point |
 
-Only `transform` and `opacity` animate. Reduced motion: durations → 0, content instantly visible,
-hold-to-confirm falls back to a labelled two-step confirm. (Full opportunity sweep in MOTION.md.)
+Motion rules:
+- **Springs for anything touchable.** Fixed-duration curves are used only for non-gesture entrances; every gesture-driven move uses `spring-ui`/`spring-drawer`/`spring-flick` from `lib/design/motion.dart`, starting from the live on-screen value so it stays interruptible and redirectable mid-flight.
+- **Velocity handoff:** on gesture release the spring starts at the finger's exact velocity, so drag → animate is one continuous motion. Release points project to the nearest detent via the exponential-decay form (apple-design §5–6).
+- **Rubber-band at edges:** progressive resistance past a boundary, never a hard stop.
+- **Only `transform` and `opacity` animate.** Reduced motion: durations → 0, content instantly visible, hold-to-confirm falls back to a labelled two-step confirm.
+- **Materials (frosted chrome):** navigation bar, tab bar and sheets use a translucent blurred backing (`blurChrome` 20 / `blurSheet` 16 over `frostChrome`/`frostSheet` fills); content scrolls underneath. Data surfaces stay opaque — hierarchy is material depth + hairlines, never glass on data.
+
 
 ## 6. Breakpoints / device scales
 
@@ -169,8 +177,10 @@ hold-to-confirm falls back to a labelled two-step confirm. (Full opportunity swe
 
 ## Deviations from the always-dark-mode default (recorded)
 
-Light-only ship (field glare, tested product decision); dark palette defined and tokenised for
-future admin night-dispatch. No raw `#000`/`#fff` anywhere in the light palette (warm ink/bone instead).
-The accent is the logo's own strand colours (cyan driver / violet admin), ≤10% of any screen as fills;
-`#0E7490`/`#6D28D9` are the AA-safe tones of the same strands used wherever the bright tone would fail
-contrast. The palette is deliberately not guessable from "logistics = navy + orange".
+**Dark mode ("Night Ops") now ships in both shells**, following the system brightness. Driver glare
+is mitigated by keeping data surfaces opaque (warm bone/ink in light, warm graphite in dark) with
+status as the only saturated colour on data in both palettes. Dark tokens are defined alongside
+light in `AppColors` and flip through `AppColors.setDark(bool)`. No raw `#000`/`#fff` anywhere in
+either palette. The accent is the logo's own strand colours (cyan driver / violet admin), ≤10% of
+any screen as fills; `#0E7490`/`#6D28D9` are the AA-safe tones of the same strands used wherever the
+bright tone would fail contrast. The palette is deliberately not guessable from "logistics = navy + orange".

@@ -39,7 +39,7 @@ class AnomalyDetailScreen extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     HelixText(row['body']?.toString() ?? '', style: TypeScale.body(AppColors.text)),
-                    const Divider(height: 24, color: AppColors.line),
+                    Divider(height: 24, color: AppColors.line),
                     KeyValueRow(label: strings.t('detail.evidence'), value: row['signal']?.toString() ?? '—', mono: false),
                     if (row['recommended_action'] != null)
                       KeyValueRow(label: strings.t('detail.openRelated'), value: row['recommended_action']!.toString(), mono: false),

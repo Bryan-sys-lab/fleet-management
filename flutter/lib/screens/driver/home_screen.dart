@@ -6,7 +6,6 @@ import '../../core/format.dart';
 import '../../core/location.dart';
 import '../../design/components/buttons.dart';
 import '../../design/components/card.dart';
-import '../../design/components/chips.dart';
 import '../../design/components/hold_to_confirm.dart';
 import '../../design/components/privacy_shield.dart';
 import '../../design/components/screen.dart';
@@ -87,7 +86,6 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen> {
     final strings = context.s;
     final shiftAsync = ref.watch(activeShiftProvider);
     final onboardingAsync = ref.watch(onboardingProvider);
-    final outboxAsync = ref.watch(outboxCountProvider);
 
     return PrivacyShield(
       child: Screen(
@@ -140,7 +138,7 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen> {
                           child: HelixCard(
                             child: Row(
                               children: [
-                                const Icon(Icons.schedule, color: AppColors.statusAmber),
+                                Icon(Icons.schedule, color: AppColors.statusAmber),
                                 const SizedBox(width: AppSpace.s3),
                                 Expanded(
                                   child: HelixText(
@@ -156,47 +154,12 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen> {
                 ),
 
             const SizedBox(height: AppSpace.s5),
-            // ── quick links ──
-            Row(
-              children: [
-                Expanded(
-                  child: QuietButton(
-                    label: strings.t('swap.title'),
-                    icon: const Icon(Icons.local_shipping_outlined, size: 20, color: AppColors.textSecondary),
-                    onPressed: () => context.push('/driver/trailer-swap'),
-                  ),
-                ),
-                const SizedBox(width: AppSpace.s3),
-                Expanded(
-                  child: QuietButton(
-                    label: strings.t('vehicle.title'),
-                    icon: const Icon(Icons.directions_bus_outlined, size: 20, color: AppColors.textSecondary),
-                    onPressed: () => context.push('/driver/my-vehicle'),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: AppSpace.s3),
-            outboxAsync.maybeWhen(
-              data: (count) => count > 0
-                  ? GestureDetector(
-                      onTap: () => context.push('/driver/outbox'),
-                      child: Row(
-                        children: [
-                          PendingChip(label: '${strings.t('outbox.title')} · $count'),
-                        ],
-                      ),
-                    )
-                  : const SizedBox.shrink(),
-              orElse: () => const SizedBox.shrink(),
-            ),
           ],
         ),
       ),
     );
   }
 }
-
 class _ShiftCard extends StatelessWidget {
   const _ShiftCard({required this.shift, required this.onClockIn, required this.onClockOut});
 

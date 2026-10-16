@@ -1,53 +1,97 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'tokens.dart';
 
-/// Builds the app themes from tokens. Light = "Daylight Field" (shipped for both
-/// shells); dark = "Night Ops" (reserved for admin night use). The strand accent
-/// comes from the active shell ([ShellAccent]), not from the theme.
+/// A translucent, blurred backing for chrome: nav bar, sheets, tab bar.
+/// Content scrolls underneath; hierarchy comes from material depth, not shadows.
+class FrostedSurface extends StatelessWidget {
+  const FrostedSurface({
+    super.key,
+    required this.child,
+    this.blur = AppColors.blurChrome,
+    this.color,
+  });
+
+  final Widget child;
+  final double blur;
+  final Color? color;
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRect(
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: blur, sigmaY: blur),
+        child: Container(
+          color: color ?? AppColors.frostChrome,
+          child: child,
+        ),
+      ),
+    );
+  }
+}
+
+/// Builds the app themes from tokens. Light = "Daylight Field"; dark =
+/// "Night Ops". Strand accents come from [ShellAccent], not from the theme.
 class HelixTheme {
   HelixTheme._();
 
-  static ThemeData light() => _base(
-        brightness: Brightness.light,
-        scaffold: AppColors.bg,
-        surface: AppColors.surface,
-        sunk: AppColors.surfaceSunk,
-        text: AppColors.text,
-        textSecondary: AppColors.textSecondary,
-        line: AppColors.line,
-      );
+  static ThemeData light() => _base(brightness: Brightness.light);
 
-  static ThemeData dark() => _base(
-        brightness: Brightness.dark,
-        scaffold: AppColors.dBg,
-        surface: AppColors.dSurface,
-        sunk: AppColors.dSurfaceSunk,
-        text: AppColors.dText,
-        textSecondary: AppColors.dTextSecondary,
-        line: AppColors.dLine,
-      );
+  static ThemeData dark() {
+    AppColors.setDark(true);
+    try {
+      return _base(brightness: Brightness.dark);
+    } finally {
+      AppColors.setDark(false);
+    }
+  }
 
-  static ThemeData _base({
-    required Brightness brightness,
-    required Color scaffold,
-    required Color surface,
-    required Color sunk,
-    required Color text,
-    required Color textSecondary,
-    required Color line,
-  }) {
+  static ThemeData _base({required Brightness brightness}) {
     final base = ThemeData(
       brightness: brightness,
       useMaterial3: true,
-      scaffoldBackgroundColor: scaffold,
+      scaffoldBackgroundColor: AppColors.bg,
       colorScheme: ColorScheme.fromSeed(
         seedColor: AppColors.brandNavy,
         brightness: brightness,
       ).copyWith(
-        surface: surface,
-        onSurface: text,
+        surface: AppColors.surface,
+        onSurface: AppColors.text,
         primary: AppColors.brandNavy,
-        outline: line,
+        outline: AppColors.line,
+      ),
+      appBarTheme: AppBarTheme(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        surfaceTintColor: Colors.transparent,
+        iconTheme: IconThemeData(color: AppColors.textInverse),
+      ),
+      navigationBarTheme: NavigationBarThemeData(
+        backgroundColor: AppColors.frostChrome,
+        indicatorColor: Colors.transparent,
+        height: AppTarget.touchPhone,
+        labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+      ),
+      bottomSheetTheme: BottomSheetThemeData(
+        backgroundColor: AppColors.frostSheet,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.sheet)),
+        ),
+        dragHandleColor: AppColors.line,
+        showDragHandle: true,
+      ),
+      dividerTheme: DividerThemeData(color: AppColors.line, thickness: 1, space: 1),
+      snackBarTheme: SnackBarThemeData(
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: AppColors.surfaceInverse,
+        contentTextStyle: TextStyle(
+          fontFamily: AppType.fontBody,
+          fontWeight: FontWeight.w400,
+          fontSize: AppType.bodyPhone,
+          height: 1.5,
+          color: AppColors.textInverse,
+        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.control)),
       ),
     );
 
@@ -81,55 +125,16 @@ class HelixTheme {
         );
 
     final textTheme = TextTheme(
-      displaySmall: display(text, AppType.displayPhone),
-      headlineMedium: display(text, AppType.displayPhone),
-      titleLarge: title(text, AppType.titlePhone),
-      titleMedium: lead(text, AppType.leadPhone),
-      bodyLarge: body(text, AppType.bodyPhone),
-      bodyMedium: body(textSecondary, AppType.bodyPhone),
-      bodySmall: body(textSecondary, AppType.captionPhone),
-      labelLarge: lead(text, AppType.bodyPhone),
+      displaySmall: display(AppColors.text, AppType.displayPhone),
+      headlineMedium: display(AppColors.text, AppType.displayPhone),
+      titleLarge: title(AppColors.text, AppType.titlePhone),
+      titleMedium: lead(AppColors.text, AppType.leadPhone),
+      bodyLarge: body(AppColors.text, AppType.bodyPhone),
+      bodyMedium: body(AppColors.textSecondary, AppType.bodyPhone),
+      bodySmall: body(AppColors.textSecondary, AppType.captionPhone),
+      labelLarge: lead(AppColors.text, AppType.bodyPhone),
     );
 
-    return base.copyWith(
-      textTheme: textTheme,
-      splashFactory: InkSparkle.splashFactory,
-      dividerTheme: DividerThemeData(color: line, thickness: 1, space: 1),
-      snackBarTheme: SnackBarThemeData(
-        behavior: SnackBarBehavior.floating,
-        backgroundColor: AppColors.surfaceInverse,
-        contentTextStyle: body(AppColors.textInverse, AppType.bodyPhone),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.control)),
-      ),
-      bottomSheetTheme: BottomSheetThemeData(
-        backgroundColor: surface,
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.sheet)),
-        ),
-        dragHandleColor: line,
-      ),
-      inputDecorationTheme: InputDecorationTheme(
-        filled: true,
-        fillColor: sunk,
-        labelStyle: lead(textSecondary, AppType.captionPhone),
-        helperStyle: body(textSecondary, AppType.captionPhone),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppRadius.control),
-          borderSide: BorderSide(color: line),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppRadius.control),
-          borderSide: BorderSide(color: line),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppRadius.control),
-          borderSide: const BorderSide(color: AppColors.accentText, width: 2),
-        ),
-        errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppRadius.control),
-          borderSide: const BorderSide(color: AppColors.statusDanger, width: 2),
-        ),
-      ),
-    );
+    return base.copyWith(textTheme: textTheme, splashFactory: InkSparkle.splashFactory);
   }
 }

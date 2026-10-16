@@ -8,9 +8,16 @@ import '../../core/format.dart';
 import '../../data/providers.dart';
 import '../../design/components/paged_list.dart';
 import '../../design/components/segmented.dart';
+import '../../design/components/swipe_row.dart';
 import '../../design/components/text.dart';
 import '../../design/tokens.dart';
 import '../common.dart';
+
+Future<void> markReadSafely(WidgetRef ref, String id) async {
+  try {
+    await ref.read(repositoryProvider).markRead(id);
+  } catch (_) {}
+}
 
 /// Inbox: Notifications / Flags / Documents. Mark-read only with
 /// `notification:manage`; exact unread count drives the admin badge.
@@ -65,7 +72,6 @@ class _NotificationsList extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final strings = context.s;
-    final canManage = ref.watch(sessionProvider).permissions.contains('notification:manage');
     return PagedList<Map<String, dynamic>>(
       emptyMessage: strings.t('notifications.empty'),
       loadMore: (cursor) async {
@@ -79,29 +85,39 @@ class _NotificationsList extends ConsumerWidget {
         final unread = row['status'] == 'QUEUED' || row['status'] == 'SENT';
         final payload = row['payload'];
         final link = targetFromNotification(payload is Map<String, dynamic> ? payload : const {});
-        return ListTile(
-          leading: unread ? const Icon(Icons.circle, size: 10, color: AppColors.accentText) : null,
-          title: HelixText(row['title']?.toString() ?? '', style: TypeScale.bodyStrong(AppColors.text)),
-          subtitle: HelixText(
-            '${row['body'] ?? ''} · ${Fmt.time(DateTime.tryParse(row['created_at']?.toString() ?? ''))}',
-            style: TypeScale.caption(AppColors.textSecondary),
+        final canManage = ref.watch(sessionProvider).permissions.contains('notification:manage');
+        return SwipeActionRow(
+          actions: canManage && unread
+              ? [
+                  SwipeAction(
+                    label: strings.t('inbox.markRead'),
+                    icon: Icons.mark_email_read,
+                    color: AppColors.accent,
+                    onPressed: () async => await markReadSafely(ref, row['id'] as String),
+                  ),
+                ]
+              : [],
+          child: ListTile(
+            leading: unread ? Icon(Icons.circle, size: 10, color: AppColors.accentText) : null,
+            title: HelixText(row['title']?.toString() ?? '', style: TypeScale.bodyStrong(AppColors.text)),
+            subtitle: HelixText(
+              '${row['body'] ?? ''} · ${Fmt.time(DateTime.tryParse(row['created_at']?.toString() ?? ''))}',
+              style: TypeScale.caption(AppColors.textSecondary),
+            ),
+            onTap: () async {
+              if (canManage) {
+                await markReadSafely(ref, row['id'] as String);
+              }
+              if (link != null && context.mounted) {
+                context.go(routeForDeepLink(link, ref.read(sessionProvider)) ?? '/driver/inbox');
+              }
+            },
           ),
-          onTap: () async {
-            if (canManage) {
-              try {
-                await ref.read(repositoryProvider).markRead(row['id'] as String);
-              } catch (_) {}
-            }
-            if (link != null && context.mounted) {
-              context.go(routeForDeepLink(link, ref.read(sessionProvider)) ?? '/driver/inbox');
-            }
-          },
         );
       },
     );
   }
 }
-
 class _FlagsList extends ConsumerWidget {
   const _FlagsList();
 
@@ -123,7 +139,7 @@ class _FlagsList extends ConsumerWidget {
           '${row['domain'] ?? ''} · ${row['severity'] ?? ''}',
           style: TypeScale.caption(AppColors.textSecondary),
         ),
-        trailing: const Icon(Icons.chevron_right, color: AppColors.textSecondary),
+        trailing: Icon(Icons.chevron_right, color: AppColors.textSecondary),
         onTap: () => context.push('/anomaly/${row['id']}'),
       ),
     );

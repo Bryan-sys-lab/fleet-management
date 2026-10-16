@@ -17,12 +17,11 @@ shell); dual-role sessions can switch shells in-app without signing out.
 - Role switch (dual-role sessions) `/role-switch`
 
 ### Driver shell (phone, bottom tabs) — identity: cyan strand
-- DriverTabs `/driver`
-  - Home `/driver/home` — shift card, Mayday, rest banner, quick links
-  - Refuel `/driver/refuel` — photo-first fuel purchase
-  - Inspect `/driver/inspect` — DVIR
-  - Accidents `/driver/accidents` — Mayday + accident report
-  - More `/driver/settings` — grouped settings (badge = outbox count)
+- DriverTabs `/driver` — **four tabs** (Home, Work, Safety, More; icon + label + badge)
+  - Home `/driver/home` — shift card, Mayday (largest control), rest banner
+  - Work `/driver/work` — Refuel + Inspect entries (daily), Trailer swap + My vehicle
+  - Safety `/driver/safety` — Accidents report, Outbox (badge), Inbox
+  - More `/driver/settings` — grouped settings (badge = outbox count when on More)
 - Stack (pushed):
   - Clock in `/driver/clock-in` · Clock out `/driver/clock-out`
   - Trailer swap `/driver/trailer-swap`
@@ -51,7 +50,8 @@ shell); dual-role sessions can switch shells in-app without signing out.
 
 ## Navigation Model
 
-- **Primary (both shells)**: bottom tab bar, 5 items max, icon + label + optional badge; placement identical on every tab root; current tab marked by weight + indicator. At ≥1024dp the active shell promotes to a navigation rail with the same destinations (progressive enhancement).
+- **Primary (both shells)**: bottom tab bar — driver shell **4 items**, admin shell **5 items max**, icon + label + optional badge; placement identical on every tab root; current tab marked by weight + indicator. At ≥1024dp the active shell promotes to a navigation rail with the same destinations (progressive enhancement).
+- The driver tab bar and admin bottom bar sit on **frosted translucent chrome** (blur + strand-quiet fill); content scrolls underneath. Data surfaces stay opaque bone/ink for glare legibility.
 - **Shell identity via the logo's twin strands**: Driver shell chrome = cyan (`#06B6D4` fills / `#0E7490` text tones); Admin shell chrome = violet (`#6D28D9`). The shell switcher shows the *other* strand, so switching reads as crossing between the two strands of the Helix.
 - **Secondary**: pushed detail screens (list → detail is the core pattern; back restores scroll, filters, and input state), full-screen covers for focused tasks (photo capture, MFA setup, forms).
 - **Utility**: grouped Settings (Account / Security / Profile / Device / Data) inside each shell's More tab; destructive actions (log out, discard queued write) visually + spatially separated and confirmed.
@@ -65,7 +65,7 @@ shell); dual-role sessions can switch shells in-app without signing out.
 2. Mayday (hold-to-send) — the one emergency control, never below actions that could preempt it.
 3. Clock in/out + vehicle & trailer summary — the primary daily job.
 4. Rest banner (`next_eligible_clock_in_at`, online only) — explains why clock-in may be blocked.
-5. Quick links (trailer swap, my vehicle, outbox badge) — secondary.
+5. Quick links now live on the Work tab (trailer swap, my vehicle) and Safety tab (outbox badge).
 
 ### Driver Refuel (photo-first)
 1. Receipt photo (start) → 2. odometer photo + reading → 3. fuel card picker (`GET /fuel/cards`) + last-4 typed → 4. purchased-at timestamp → 5. submit. Progress implied by capture order; missing items listed under a disabled submit (MissingHint says what is missing).

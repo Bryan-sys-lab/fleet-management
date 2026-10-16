@@ -30,7 +30,7 @@ accent is the Helix logo's twin strands: **cyan = Driver shell, violet = Admin s
 - **Tone**: calm, authoritative, trustworthy under pressure. Not playful, not consumer-glossy, not "startup".
 - **Reference points**: aviation/industrial instrument panels (legibility of N5-style status), Swiss transit signage (Barlow family heritage), paper operational checklists (bone/paper surfaces), Linear-grade craft in component states (focus, pressed, disabled all designed).
 - **Anti-references**: generic AI SaaS look (purple gradients, glassmorphism, sparkle icons); neon "telematics startup" dark mode; Material 3 default purple; Instagram-style consumer chrome; anything that reads as a prototype (flat unstyled lists, pure black on pure white, no designed empty states).
-- **Category-reflex test result**: fleet/logistics would reflexively produce navy + safety-orange, or teal-on-black "tracking app". This design refuses both: the primary chrome is warm bone + warm ink with no invented brand colour; the accent IS the Helix logo's own strands (cyan driver / violet admin), used for actions, selection, and live state — never decoration; status colours remain the only saturated colour on data.
+- **Category-reflex test result**: fleet/logistics would reflexively produce navy + safety-orange, or teal-on-black "tracking app". This design refuses both: the primary chrome is warm bone + warm ink with no invented brand colour; the accent IS the Helix logo's own strands (cyan driver / violet admin), used for actions, selection, and live state — never decoration; status colours remain the only saturated colour on data. **Apple-grade craft is layered on top** — spring physics, velocity handoff, interruptible motion, and translucent materials — without abandoning field-instrument restraint.
 
 ## Existing Patterns
 
@@ -80,7 +80,7 @@ The new identity must respect the product's tested behaviour and semantics (thes
 ## Responsive Behavior
 
 - **One app, two shells, mobile-first everywhere.** All screens are phone-first (360–430dp).
-- **Driver shell**: single-column portrait layout, bottom tabs ≤5 with icon + label + badge, primary actions thumb-reachable (bottom), 56dp targets, body 16dp minimum, text clamp 1.3×.
+- **Driver shell**: single-column portrait layout, **four bottom tabs** (Home, Work, Safety, More) with icon + label + badge, primary actions thumb-reachable (bottom), 56dp targets, body 16dp minimum, text clamp 1.3×. Frosted translucent tab bar; content scrolls underneath.
 - **Admin shell**: same phone-first approach — bottom tabs (Overview, Map, Accidents, Review, More) with denser admin-scale type and 64dp targets; at ≥1024dp it promotes to a navigation rail + list/detail panes (progressive enhancement, never required). No tablet-only dependency anywhere.
 - **Shell switching**: dual-role sessions pick a shell at sign-in and can switch in-app (account menu / Settings) without re-authenticating; the choice persists per device and is re-validated against the session's roles on every sign-in.
 - **Orientation changes preserve list scroll, filters, and form state.**
@@ -93,7 +93,7 @@ The new identity must respect the product's tested behaviour and semantics (thes
 - Dynamic Type / system text scaling up to 1.3× without truncation; reduced-motion honoured (motion becomes instant, content fully visible).
 - Keyboard/switch-access navigable (Android), TalkBack/VoiceOver labels on all icon-only affordances.
 - Screenshot blocking on Login, MFA, PIN, MFA setup; recovery codes not selectable; PrivacyShield in app switcher; lock-screen notifications hide content.
-- Driver app ships light-only (field glare); admin dark palette defined as tokens ("Night Ops") reserved for future night-dispatch use — deliberate deviation from the always-dark-mode default, recorded here.
+- Driver app ships light-only by default (field glare); **dark ("Night Ops") ships in both shells** following system brightness, with data surfaces opaque in both palettes.
 
 ## Out of Scope
 

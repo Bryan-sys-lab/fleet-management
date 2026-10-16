@@ -27,7 +27,7 @@ class PagedList<T> extends StatefulWidget {
     this.onRetry,
     this.offlineCopy = false,
     this.padding = const EdgeInsets.only(bottom: AppSpace.s6),
-    this.separator = const Divider(height: 1, color: AppColors.line),
+    this.separator,
   });
 
   /// Returns a page (or null while loading); throws [HelixErrorLike] on failure.
@@ -38,7 +38,7 @@ class PagedList<T> extends StatefulWidget {
   final VoidCallback? onRetry;
   final bool offlineCopy;
   final EdgeInsets padding;
-  final Widget separator;
+  final Widget? separator;
 
   @override
   State<PagedList<T>> createState() => _PagedListState<T>();
@@ -170,7 +170,7 @@ class _PagedListState<T> extends State<PagedList<T>> {
         physics: const AlwaysScrollableScrollPhysics(),
         padding: widget.padding,
         itemCount: _items.length + (_hasMore ? 1 : 0),
-        separatorBuilder: (_, _) => widget.separator,
+        separatorBuilder: (_, _) => widget.separator ?? const Divider(height: 1),
         itemBuilder: (context, index) {
           if (index >= _items.length) {
             return _loadingMore

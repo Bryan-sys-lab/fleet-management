@@ -184,7 +184,7 @@ class _InspectScreenState extends ConsumerState<InspectScreen> {
                 loading: () => Skeleton(height: 56),
                 error: (e, _) => inlineError(context, e),
                 data: (templates) => OutlinedButton.icon(
-                  icon: const Icon(Icons.checklist, color: AppColors.textSecondary),
+                  icon: Icon(Icons.checklist, color: AppColors.textSecondary),
                   label: HelixText(
                     template?['label']?.toString() ?? strings.t('forms.template'),
                     style: TypeScale.body(AppColors.text),
@@ -289,7 +289,7 @@ class _ItemCard extends ConsumerWidget {
                   result == 'FAIL' ? AppColors.statusDanger : AppColors.textSecondary,
                 )),
                 selected: result == 'FAIL',
-                selectedColor: const Color(0xFFF7E3E1),
+                selectedColor: AppColors.statusDanger.withValues(alpha: 0.10),
                 onSelected: (_) => onResult('FAIL'),
               ),
               const SizedBox(width: AppSpace.s2),
