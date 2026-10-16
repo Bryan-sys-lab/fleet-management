@@ -11,6 +11,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     python3 make g++ \
     && rm -rf /var/lib/apt/lists/*
 COPY package.json package-lock.json ./
+# Copy all workspace manifests so npm ci resolves every workspace dependency
+# (e.g. @fleet/shared's @sentry/node, @opentelemetry/*, etc.).
+COPY packages/ ./packages/
 RUN npm ci
 COPY . .
 
