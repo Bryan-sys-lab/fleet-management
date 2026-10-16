@@ -140,7 +140,7 @@ class _FuelList extends ConsumerWidget {
         Align(
           alignment: Alignment.centerRight,
           child: TextButton.icon(
-            icon: const Icon(Icons.upload_file, color: AppColors.adminAccent),
+            icon: Icon(Icons.upload_file, color: AppColors.adminAccent),
             label: HelixText(strings.t('importer.submit'), style: TypeScale.button(AppColors.adminAccent)),
             onPressed: () => context.push('/admin/import-statement'),
           ),

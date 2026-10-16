@@ -101,7 +101,7 @@ class _AccidentDetailScreenState extends ConsumerState<AccidentDetailScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       HelixText(row['driver_statement']?.toString() ?? '', style: TypeScale.body(AppColors.text)),
-                      const Divider(height: 24, color: AppColors.line),
+                      Divider(height: 24, color: AppColors.line),
                       KeyValueRow(label: strings.t('detail.position'), value: row['location_label']?.toString() ?? '—', mono: false),
                       KeyValueRow(label: strings.t('detail.tier'), value: strings.t('detail.tierShort', {'n': '${row['escalation_tier'] ?? 0}'}), mono: false),
                       KeyValueRow(
@@ -115,7 +115,7 @@ class _AccidentDetailScreenState extends ConsumerState<AccidentDetailScreen> {
                 const SizedBox(height: AppSpace.s4),
                 QuietButton(
                   label: strings.t('admin.telemetry'),
-                  icon: const Icon(Icons.link, size: 20, color: AppColors.textSecondary),
+                  icon: Icon(Icons.link, size: 20, color: AppColors.textSecondary),
                   onPressed: _verifyTelemetry,
                 ),
                 if (_telemetry != null) ...[

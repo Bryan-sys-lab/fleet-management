@@ -95,7 +95,7 @@ class AdminOverviewScreen extends ConsumerWidget {
                       for (final entry in {'Accidents': '/admin/accidents', 'Review': '/admin/review', 'Map': '/admin/map'}.entries)
                         ListTile(
                           leading: HelixChip(label: entry.key, color: AppColors.adminAccent, glyph: '►'),
-                          trailing: const Icon(Icons.chevron_right, color: AppColors.textSecondary),
+                          trailing: Icon(Icons.chevron_right, color: AppColors.textSecondary),
                           onTap: () => context.go(entry.value),
                         ),
                     ],

@@ -166,7 +166,7 @@ class _VehicleDrawer extends StatelessWidget {
               if (parsed != null) StatusBadge(state: parsed, dense: true),
               const Spacer(),
               IconButton(
-                icon: const Icon(Icons.close, color: AppColors.textSecondary),
+                icon: Icon(Icons.close, color: AppColors.textSecondary),
                 onPressed: onClose,
               ),
             ],

@@ -85,7 +85,7 @@ class _TrackerPairScreenState extends ConsumerState<TrackerPairScreen> {
             HelixText(strings.t('hardware.brand'), style: TypeScale.caption(AppColors.textSecondary)),
             DropdownButtonFormField<String>(
               initialValue: _brand,
-              decoration: const InputDecoration(filled: true, fillColor: AppColors.surfaceSunk),
+              decoration: InputDecoration(filled: true, fillColor: AppColors.surfaceSunk),
               items: const [
                 'GENERIC_H02',
                 'TELTONIKA',

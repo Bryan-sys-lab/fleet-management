@@ -85,7 +85,7 @@ class _StrandCard extends StatelessWidget {
             ),
             const SizedBox(width: AppSpace.s4),
             Expanded(child: HelixText(title, style: TypeScale.lead(AppColors.text))),
-            const Icon(Icons.chevron_right, color: AppColors.textSecondary),
+            Icon(Icons.chevron_right, color: AppColors.textSecondary),
           ],
         ),
       ),
