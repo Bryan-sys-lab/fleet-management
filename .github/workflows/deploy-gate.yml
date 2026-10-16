@@ -13,7 +13,7 @@ concurrency:
 
 jobs:
   deploy-gate:
-    name: Build image, start stack, run Newman API tests
+    name: Build image, start API, run Newman API tests
     runs-on: ubuntu-latest
     services:
       postgres:
@@ -44,10 +44,19 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
 
-      - name: Build backend image (prod target)
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build (tsc -b across workspace)
+        run: npm run build
+
+      - name: Build backend Docker image (prod target) — verifies container compiles
         uses: docker/build-push-action@v6
         with:
           context: .
@@ -58,41 +67,23 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: Write env file for api container
-        run: |
-          cat > deploy/.env <<'EOF'
-          POSTGRES_USER=postgres
-          POSTGRES_PASSWORD=pg_local_dev
-          POSTGRES_DB=fleet
-          POSTGRES_PORT=5444
-          REDIS_PORT=6379
-          API_PORT=4000
-          NODE_ENV=production
-          SECURITY_ENFORCE=always
-          TRUST_PROXY=true
-          JWT_SECRET=draft-gate-secret-do-not-use-in-prod
-          MFA_ENCRYPTION_KEY=
-          WEBHOOK_SECRET=
-          ALLOWED_ORIGINS=
-          NODE_ENV=production
-          LOG_LEVEL=warn
-          CLERK_SECRET_KEY=
-          CLERK_FRONTEND_URL=
-          AWS_ACCESS_KEY_ID=
-          AWS_SECRET_ACCESS_KEY=
-          RESEND_API_KEY=
-          AFRICAS_TALKING_API_KEY=
-          DATABASE_URL=postgresql://postgres:pg_local_dev@localhost:5444/fleet
-          REDIS_URL=redis://localhost:6379/0
-          PORT=4000
-          EOF
+      - name: Apply schema to throwaway Postgres
+        run: npm run db:validate
+        env:
+          POSTGIS: shim
+          PGURI: postgresql://postgres:pg_local_dev@localhost:5444/fleet
 
-      - name: Start the API container (backend stack entrypoint)
+      - name: Start the API backend
+        env:
+          DATABASE_URL: postgresql://postgres:pg_local_dev@localhost:5444/fleet
+          REDIS_URL: redis://localhost:6379/0
+          PORT: 4000
+          NODE_ENV: production
+          SECURITY_ENFORCE: always
+          JWT_SECRET: draft-gate-secret-do-not-use-in-prod
         run: |
-          docker run -d --name fleet-api \
-            --env-file deploy/.env \
-            -p 4000:4000 \
-            fleet-api:local
+          npm --workspace @fleet/api run start > /tmp/api.log 2>&1 &
+          echo $! > /tmp/api.pid
           echo "Waiting for API to become healthy..."
           timeout 90 bash -c 'until curl -sf http://localhost:4000/healthz >/dev/null 2>&1; do sleep 2; done'
           echo "API is healthy — running Newman tests."
@@ -108,6 +99,12 @@ jobs:
             --reporter-json-export newman-results.json \
             --exit-code-on-test-failure
 
+      - name: Stop the API backend
+        if: always()
+        run: |
+          kill $(cat /tmp/api.pid) 2>/dev/null || true
+          cat /tmp/api.log 2>/dev/null || true
+
       - name: Upload Newman results
         if: always()
         uses: actions/upload-artifact@v4
@@ -115,8 +112,3 @@ jobs:
           name: newman-results
           path: newman-results.json
           if-no-files-found: warn
-
-      - name: Stop containers
-        if: always()
-        run: |
-          docker rm -f fleet-api 2>/dev/null || true
