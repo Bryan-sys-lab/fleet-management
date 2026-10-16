@@ -77,9 +77,10 @@ jobs:
           DATABASE_URL: postgresql://postgres:pg_local_dev@localhost:5444/fleet
           REDIS_URL: redis://localhost:6379/0
           PORT: 4000
-          NODE_ENV: production
+          NODE_ENV: development
           SECURITY_ENFORCE: off
-          JWT_SECRET: draft-gate-secret-do-not-use-in-prod
+          JWT_SECRET: ci-test-secret-do-not-use-in-prod
+          MFA_ENCRYPTION_KEY: dxoVQRkv5atYjtwrgk1NjdEy7k5otdASkT7NMO21C0k=
         run: |
           ls -la packages/api/dist/server.js
           node packages/api/dist/server.js > /tmp/api.log 2>&1 &
