@@ -1,8 +1,7 @@
 def localProperties = new Properties()
 def localPropertiesFile = rootProject.file('local.properties')
 if (localPropertiesFile.exists()) {
-    localPropertiesFile.readWithUTF8('UTF-8')
-    localProperties.load(localPropertiesFile)
+    localPropertiesFile.withReader('UTF-8') { localProperties.load(it) }
 }
 
 def flutterRoot = localProperties.getProperty('flutter.sdk')
