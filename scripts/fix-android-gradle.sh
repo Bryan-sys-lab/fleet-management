@@ -28,14 +28,27 @@ allprojects {
 }
 EOF
 
-# Replace settings.gradle.kts with Groovy including pluginManagement for Flutter plugin
+# Replace settings.gradle.kts with Groovy including pluginManagement for local Flutter plugin
 cat > settings.gradle << 'EOF'
+def localProperties = new Properties()
+def localPropertiesFile = rootProject.file('local.properties')
+if (localPropertiesFile.exists()) {
+    localPropertiesFile.withReader('UTF-8') { reader ->
+        localProperties.load(reader)
+    }
+}
+def flutterRoot = localProperties.getProperty('flutter.sdk')
+if (flutterRoot == null) {
+    throw new GradleException("Flutter SDK not found. Define location with flutter.sdk in the local.properties file.")
+}
+
 pluginManagement {
     repositories {
         gradlePluginPortal()
         google()
         mavenCentral()
     }
+    includeBuild "$flutterRoot/packages/flutter_tools/gradle"
 }
 
 include ':app'
