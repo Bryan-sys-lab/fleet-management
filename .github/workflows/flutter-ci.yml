@@ -48,8 +48,17 @@ jobs:
         run: flutter create --template=app --platform=android --overwrite .
         working-directory: flutter
 
-      - name: Fix build.gradle.kts Groovy-in-Kotlin syntax
-        run: bash ../scripts/fix-android-build.sh
+      - name: Replace build.gradle.kts with working Groovy build.gradle
+        run: |
+          rm -f android/build.gradle.kts
+          cat > android/build.gradle << 'EOF'
+allprojects {
+    repositories {
+        google()
+        mavenCentral()
+    }
+}
+EOF
         working-directory: flutter
 
       - name: Build Android APK (release)
