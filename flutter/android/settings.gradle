@@ -1,0 +1,14 @@
+pluginManagement {
+    repositories {
+        gradlePluginPortal()
+        google()
+        mavenCentral()
+    }
+}
+
+include ':app'
+
+def flutterRoot = System.getenv('FLUTTER_ROOT')
+        ?: System.getenv('HOME') + '/flutter'
+        ?: '/opt/flutter'
+apply from: "$flutterRoot/packages/flutter_tools/gradle/flutter_loader.gradle"
