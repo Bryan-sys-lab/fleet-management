@@ -67,6 +67,11 @@ app/
 settings.gradle.kts
 gradle.properties
 
+# Flutter Android Gradle files (source, not build artifacts)
+!flutter/android/app/
+!flutter/android/app/build.gradle.kts
+!flutter/android/settings.gradle.kts
+
 # Kotlin app gradle wrapper (managed per-app)
 kotlin-app/gradle/gradle-daemon-jvm.properties
 kotlin-app/gradle/wrapper/gradle-wrapper.jar
