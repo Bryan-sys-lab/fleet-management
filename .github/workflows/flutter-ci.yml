@@ -56,6 +56,13 @@ jobs:
         run: flutter pub get
         working-directory: flutter
 
+      - name: Replace Kotlin DSL build.gradle.kts with Groovy build.gradle
+        run: |
+          rm -f android/build.gradle.kts android/settings.gradle.kts
+          printf 'buildscript {\n    repositories {\n        google()\n        mavenCentral()\n    }\n    dependencies {\n        classpath "com.android.tools.build:gradle:8.2.0"\n        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:2.0.0"\n    }\n}\n\nallprojects {\n    repositories {\n        google()\n        mavenCentral()\n    }\n}\n' > android/build.gradle
+          printf 'include ":app"\n' > android/settings.gradle
+        working-directory: flutter
+
       - name: Build Android APK (release)
         run: flutter build apk --release
         working-directory: flutter
