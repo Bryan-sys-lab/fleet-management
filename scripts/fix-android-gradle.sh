@@ -4,9 +4,18 @@
 # doesn't exist in Gradle's Groovy. Replace with proper Groovy syntax.
 cd android
 
-# Replace project-level build.gradle with simple Groovy
-rm -f build.gradle.kts
+# Replace project-level build.gradle with working Groovy (includes Android Gradle Plugin classpath)
 cat > build.gradle << 'EOF'
+buildscript {
+    repositories {
+        google()
+        mavenCentral()
+    }
+    dependencies {
+        classpath 'com.android.tools.build:gradle:8.2.0'
+    }
+}
+
 allprojects {
     repositories {
         google()
