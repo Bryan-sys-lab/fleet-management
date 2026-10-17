@@ -1,0 +1,57 @@
+name: Flutter CI
+
+on:
+  push:
+    branches: [final-app]
+  pull_request:
+    branches: [final-app]
+
+concurrency:
+  group: flutter-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  analyze-test-build:
+    name: Analyze, test, and build Flutter app
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: 3.47.5
+
+      - name: Set up Java 17 (Android AGP requirement)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Install dependencies
+        run: flutter pub get
+        working-directory: flutter
+
+      - name: Flutter analyze
+        run: flutter analyze
+        working-directory: flutter
+
+      - name: Flutter test
+        run: flutter test
+        working-directory: flutter
+
+      - name: Build Android APK (release)
+        run: flutter build apk --release
+        working-directory: flutter
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: helix-apk
+          path: flutter/build/app/outputs/flutter-apk/app-release.apk
+          retention-days: 30
+          if-no-files-found: error
