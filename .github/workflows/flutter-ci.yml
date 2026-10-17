@@ -48,6 +48,14 @@ jobs:
         run: flutter create --template=app --platform=android --overwrite .
         working-directory: flutter
 
+      - name: Restore pubspec.yaml (flutter create overwrites it)
+        run: git checkout pubspec.yaml pubspec.lock
+        working-directory: flutter
+
+      - name: Install dependencies again
+        run: flutter pub get
+        working-directory: flutter
+
       - name: Fix Gradle files (readWithUTF8 not available in Gradle's Groovy)
         run: |
           rm -f android/build.gradle.kts
