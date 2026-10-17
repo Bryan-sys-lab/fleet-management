@@ -23,7 +23,7 @@ plugins {
 
 android {
     namespace = "com.helix.helix"
-    compileSdk = 37
+    compileSdk = 36
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_1_8
@@ -41,7 +41,7 @@ android {
     defaultConfig {
         applicationId = "com.helix.helix"
         minSdk = 21
-        targetSdk = 34
+        targetSdk = 36
         versionCode = flutterVersionCode
         versionName = flutterVersionName
     }
@@ -69,10 +69,10 @@ android {
 
 dependencies {
     implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8:2.2.20")
-    implementation("androidx.core:core-ktx:+")
-    implementation("androidx.annotation:annotation:+")
-    implementation("androidx.lifecycle:lifecycle-runtime-ktx:+")
-    implementation("androidx.activity:activity:+")
+    implementation("androidx.core:core-ktx:1.12.0")
+    implementation("androidx.annotation:annotation:1.7.1")
+    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.2")
+    implementation("androidx.activity:activity:1.9.0")
 }
 
 flutter {
