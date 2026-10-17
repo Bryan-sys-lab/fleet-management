@@ -29,20 +29,20 @@ allprojects {
 EOF
 
 # Replace settings.gradle.kts with Groovy including pluginManagement for local Flutter plugin
+# pluginManagement MUST be the first block in settings.gradle per Gradle docs
 cat > settings.gradle << 'EOF'
-def localProperties = new Properties()
-def localPropertiesFile = rootProject.file('local.properties')
-if (localPropertiesFile.exists()) {
-    localPropertiesFile.withReader('UTF-8') { reader ->
-        localProperties.load(reader)
-    }
-}
-def flutterRoot = localProperties.getProperty('flutter.sdk')
-if (flutterRoot == null) {
-    throw new GradleException("Flutter SDK not found. Define location with flutter.sdk in the local.properties file.")
-}
-
 pluginManagement {
+    def localProperties = new Properties()
+    def localPropertiesFile = new File("local.properties")
+    if (localPropertiesFile.exists()) {
+        localPropertiesFile.withReader('UTF-8') { reader ->
+            localProperties.load(reader)
+        }
+    }
+    def flutterRoot = localProperties.getProperty('flutter.sdk')
+    if (flutterRoot == null) {
+        throw new GradleException("Flutter SDK not found. Define location with flutter.sdk in the local.properties file.")
+    }
     repositories {
         gradlePluginPortal()
         google()
