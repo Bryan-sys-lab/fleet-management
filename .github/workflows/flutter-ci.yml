@@ -31,10 +31,6 @@ jobs:
         with:
           channel: stable
 
-      - name: Flutter version
-        run: flutter --version
-        working-directory: flutter
-
       - name: Flutter pub get
         run: flutter pub get
         working-directory: flutter
@@ -50,16 +46,6 @@ jobs:
       - name: Get Flutter SDK path
         id: flutter-path
         run: echo "flutter-path=$(flutter sdk-path)" >> $GITHUB_OUTPUT
-        working-directory: flutter
-
-      - name: Check Flutter gradle plugin directory
-        run: |
-          FLUTTER_PATH=$(flutter sdk-path)
-          echo "Flutter path: $FLUTTER_PATH"
-          echo "--- packages/flutter_tools/gradle/ ---"
-          ls -la "$FLUTTER_PATH/packages/flutter_tools/gradle/" 2>&1 || echo "NOT FOUND"
-          echo "--- packages/flutter_tools/ ---"
-          ls -la "$FLUTTER_PATH/packages/flutter_tools/" 2>&1 | head -20 || echo "NOT FOUND"
         working-directory: flutter
 
       - name: Detect Android SDK location
@@ -97,12 +83,8 @@ jobs:
           EOF
         shell: bash
 
-      - name: Show local.properties
-        run: cat flutter/android/local.properties
-        shell: bash
-
       - name: Build Android APK (debug)
-        run: flutter build apk --debug --verbose -Pflutter.sdk=${{ steps.flutter-path.outputs.flutter-path }}
+        run: flutter build apk --debug -Pflutter.sdk=${{ steps.flutter-path.outputs.flutter-path }}
         working-directory: flutter
         env:
           ANDROID_HOME: ${{ steps.android-home.outputs.android-home }}

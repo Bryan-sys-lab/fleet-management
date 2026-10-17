@@ -1,1 +1,21 @@
+pluginManagement {
+    repositories {
+        gradlePluginPortal()
+        google()
+        mavenCentral()
+    }
+    def flutterRoot = System.getenv('FLUTTER_ROOT')
+            ?: System.getProperty('flutter.sdk')
+            ?: new File(rootDir, 'local.properties').with { f ->
+                if (f.exists()) {
+                    def p = new Properties()
+                    f.inputStream.withStream { is -> p.load(is) }
+                    p
+                } else null
+            }?.getProperty('flutter.sdk')
+            ?: System.getenv('HOME') + '/flutter'
+            ?: '/opt/flutter'
+    includeBuild "$flutterRoot/packages/flutter_tools/gradle"
+}
+
 include ':app'
