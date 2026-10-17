@@ -34,7 +34,10 @@ jobs:
 
       - name: Get Flutter SDK path
         id: flutter-path
-        run: echo "flutter-path=$(flutter sdk-path)" >> $GITHUB_OUTPUT
+        run: |
+          FLUTTER_PATH=$(flutter sdk-path)
+          echo "flutter-path=$FLUTTER_PATH" >> $GITHUB_OUTPUT
+          echo "FLUTTER_ROOT=$FLUTTER_PATH" >> $GITHUB_ENV
         working-directory: flutter
 
       - name: Flutter precache Android
