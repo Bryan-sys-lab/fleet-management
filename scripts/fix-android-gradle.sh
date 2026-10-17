@@ -16,7 +16,7 @@ buildscript {
     }
     dependencies {
         classpath 'com.android.tools.build:gradle:8.11.1'
-        classpath 'org.jetbrains.kotlin:kotlin-gradle-plugin:2.0.0'
+        classpath 'org.jetbrains.kotlin:kotlin-gradle-plugin:2.2.20'
     }
 }
 
@@ -95,7 +95,7 @@ android {
 }
 
 dependencies {
-    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:2.0.0"
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:2.2.20"
     implementation "androidx.core:core-ktx:+"
     implementation "androidx.annotation:annotation:+"
     implementation "androidx.lifecycle:lifecycle-runtime-ktx:+"
