@@ -344,6 +344,66 @@
       ]
     },
     {
+      "name": "Protected: POST /api/v1/telemetry/webhook (valid HMAC -> 202)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "http://localhost:4000/api/v1/telemetry/webhook",
+        "body": {
+          "mode": "raw",
+          "raw": "{\"deviceId\": \"dev-123\", \"lat\": 40.7128, \"lon\": -74.006, \"timestamp\": \"2026-10-17T03:00:00Z\"}"
+        }
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "var secret = 'ci-test-webhook-secret-do-not-use-in-prod';",
+              "var body = request.body.raw;",
+              "var hmac = CryptoJS.HmacSHA256(body, secret).toString(CryptoJS.enc.Hex);",
+              "var timestamp = Math.floor(Date.now() / 1000);",
+              "pm.request.headers.add({",
+              "  key: 'x-signature',",
+              "  value: 'sha256=' + hmac",
+              "});",
+              "pm.request.headers.add({",
+              "  key: 'x-timestamp',",
+              "  value: timestamp.toString()",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status is 202 (valid HMAC accepted)', function () { pm.expect(pm.response.code).to.equal(202); });",
+              "pm.test('Content-Type is JSON', function () { pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json'); });",
+              "pm.expect(pm.response.headers.get('X-Content-Type-Options')).to.equal('nosniff');",
+              "pm.expect(pm.response.headers.get('X-Frame-Options')).to.equal('DENY');",
+              "pm.expect(pm.response.headers.get('Referrer-Policy')).to.equal('no-referrer');",
+              "pm.expect(pm.response.headers.get('Strict-Transport-Security')).to.include('max-age=63072000');",
+              "pm.expect(pm.response.headers.get('Strict-Transport-Security')).to.include('includeSubDomains');",
+              "pm.expect(pm.response.headers.get('Strict-Transport-Security')).to.include('preload');",
+              "pm.expect(pm.response.headers.get('Content-Security-Policy')).to.include(\"default-src 'none'\");",
+              "pm.expect(pm.response.headers.get('X-Powered-By')).to.be.undefined;",
+              "pm.expect(pm.response.headers.get('X-DNS-Prefetch-Control')).to.equal('off');",
+              "pm.expect(pm.response.headers.get('X-Download-Options')).to.equal('noopen');",
+              "pm.expect(pm.response.headers.get('X-Permitted-Cross-Domain-Policies')).to.equal('none');"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
       "name": "CORS does not reflect arbitrary origin",
       "request": {
         "method": "OPTIONS",

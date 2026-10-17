@@ -13,7 +13,7 @@ concurrency:
 
 jobs:
   deploy-gate:
-    name: Build image, start API, run Newman API tests
+    name: Build image, start full backend stack, run Newman API tests
     runs-on: ubuntu-latest
     services:
       postgres:
@@ -38,6 +38,23 @@ jobs:
           --health-retries 5
         ports:
           - 6379:6379
+      traccar:
+        image: traccar/traccar:latest
+        env:
+          DATABASE_DRIVER: org.postgresql.Driver
+          DATABASE_URL: jdbc:postgresql://localhost:5444/traccar
+          DATABASE_USER: postgres
+          DATABASE_PASSWORD: pg_local_dev
+          FORWARD_REDIS_ENABLED: "true"
+          FORWARD_REDIS_URI: redis://localhost:6379/0
+          FORWARD_REDIS_CHANNEL: traccar:positions
+        options: >-
+          --health-cmd "wget -qO- http://localhost:8082 >/dev/null 2>&1 || exit 1"
+          --health-interval 15s
+          --health-timeout 5s
+          --health-retries 20
+        ports:
+          - 8082:8082
     steps:
       - name: Checkout (full history for turbo)
         uses: actions/checkout@v4
@@ -65,6 +82,10 @@ jobs:
           load: true
           tags: fleet-api:local
 
+      - name: Create Traccar database in Postgres
+        run: |
+          psql -h localhost -p 5444 -U postgres -d postgres -c "CREATE DATABASE traccar" 2>/dev/null || true
+
       - name: Apply schema to throwaway Postgres
         continue-on-error: true
         run: npm run db:validate
@@ -76,12 +97,15 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:pg_local_dev@localhost:5444/fleet
           REDIS_URL: redis://localhost:6379/0
+          TRACCAR_BASE_URL: http://localhost:8082
           PORT: 4000
           NODE_ENV: development
           SECURITY_ENFORCE: off
           JWT_SECRET: ci-test-secret-do-not-use-in-prod
           MFA_ENCRYPTION_KEY: Y2ktZHVtbXktbWZhLWtleS0zMi1ieXRlLXMhIVhYWFg=
           WEBHOOK_SECRET: ci-test-webhook-secret-do-not-use-in-prod
+          TRACCAR_USERNAME: admin
+          TRACCAR_PASSWORD: admin
         run: |
           ls -la packages/api/dist/server.js
           node packages/api/dist/server.js > /tmp/api.log 2>&1 &
@@ -100,7 +124,7 @@ jobs:
       - name: Install Newman (Postman CLI)
         run: npm install -g newman@6
 
-      - name: Run Newman against all APIs (security headers + fail-secure auth)
+      - name: Run Newman against all APIs (security headers + fail-secure auth + HMAC webhook)
         run: |
           newman run deploy/postman/fleet-api.postman_collection.json \
             --reporters cli,json \
