@@ -127,11 +127,11 @@
       ]
     },
     {
-      "name": "Protected: GET /api/v1/me (no auth -> 401)",
+      "name": "Protected: GET /api/v1/me/consent (no auth -> 401)",
       "request": {
         "method": "GET",
         "header": [],
-        "url": "http://localhost:4000/api/v1/me"
+        "url": "http://localhost:4000/api/v1/me/consent"
       },
       "event": [
         {
@@ -227,11 +227,20 @@
       ]
     },
     {
-      "name": "Protected: GET /api/v1/accidents (no auth -> 401)",
+      "name": "Protected: POST /api/v1/accidents/mayday (no auth -> 401)",
       "request": {
-        "method": "GET",
-        "header": [],
-        "url": "http://localhost:4000/api/v1/accidents"
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "http://localhost:4000/api/v1/accidents/mayday",
+        "body": {
+          "mode": "raw",
+          "raw": "{}"
+        }
       },
       "event": [
         {
@@ -257,11 +266,20 @@
       ]
     },
     {
-      "name": "Protected: GET /api/v1/admin/hardware (no auth -> 401)",
+      "name": "Protected: POST /api/v1/admin/hardware/pair (no auth -> 401)",
       "request": {
-        "method": "GET",
-        "header": [],
-        "url": "http://localhost:4000/api/v1/admin/hardware"
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "http://localhost:4000/api/v1/admin/hardware/pair",
+        "body": {
+          "mode": "raw",
+          "raw": "{}"
+        }
       },
       "event": [
         {
