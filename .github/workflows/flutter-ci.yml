@@ -31,6 +31,10 @@ jobs:
         with:
           channel: stable
 
+      - name: Flutter version
+        run: flutter --version
+        working-directory: flutter
+
       - name: Flutter pub get
         run: flutter pub get
         working-directory: flutter
@@ -88,7 +92,8 @@ jobs:
         shell: bash
 
       - name: Build Android APK (debug)
-        run: flutter build apk --debug -Pflutter.sdk=${{ steps.flutter-path.outputs.flutter-path }}
+        run: flutter build apk --debug --verbose -Pflutter.sdk=${{ steps.flutter-path.outputs.flutter-path }}
         working-directory: flutter
         env:
           ANDROID_HOME: ${{ steps.android-home.outputs.android-home }}
+          FLUTTER_ROOT: ${{ steps.flutter-path.outputs.flutter-path }}
