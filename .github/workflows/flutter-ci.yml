@@ -43,6 +43,34 @@ jobs:
         run: flutter test
         working-directory: flutter
 
+      - name: Detect Android SDK location
+        id: android-home
+        run: |
+          if [ -n "$ANDROID_HOME" ]; then
+            echo "android-home=$ANDROID_HOME" >> $GITHUB_OUTPUT
+          elif [ -n "$ANDROID_SDK_ROOT" ]; then
+            echo "android-home=$ANDROID_SDK_ROOT" >> $GITHUB_OUTPUT
+          else
+            echo "android-home=$HOME/Android/Sdk" >> $GITHUB_OUTPUT
+          fi
+        shell: bash
+
+      - name: Accept Android SDK licenses
+        run: |
+          echo y | ${{ steps.android-home.outputs.android-home }}/cmdline-tools/latest/bin/sdkmanager --licenses || true
+        shell: bash
+        env:
+          ANDROID_HOME: ${{ steps.android-home.outputs.android-home }}
+
+      - name: Synthesize android/local.properties
+        run: |
+          cat > flutter/android/local.properties <<EOF
+          sdk.dir=${{ steps.android-home.outputs.android-home }}
+          flutter.sdk=${HOME}/flutter
+          flutter.buildMode=release
+          EOF
+        shell: bash
+
       - name: Build Android APK (release)
         run: flutter build apk --release
         working-directory: flutter
