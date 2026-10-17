@@ -38,3 +38,7 @@ jobs:
       - name: Flutter analyze
         run: flutter analyze
         working-directory: flutter
+
+      - name: Flutter test
+        run: flutter test
+        working-directory: flutter
