@@ -43,6 +43,11 @@ jobs:
         run: flutter test
         working-directory: flutter
 
+      - name: Get Flutter SDK path
+        id: flutter-path
+        run: echo "flutter-path=$(flutter sdk-path)" >> $GITHUB_OUTPUT
+        working-directory: flutter
+
       - name: Detect Android SDK location
         id: android-home
         run: |
@@ -73,13 +78,17 @@ jobs:
         run: |
           cat > flutter/android/local.properties <<EOF
           sdk.dir=${{ steps.android-home.outputs.android-home }}
-          flutter.sdk=${HOME}/flutter
+          flutter.sdk=${{ steps.flutter-path.outputs.flutter-path }}
           flutter.buildMode=release
           EOF
         shell: bash
 
+      - name: Show local.properties
+        run: cat flutter/android/local.properties
+        shell: bash
+
       - name: Build Android APK (debug)
-        run: flutter build apk --debug -Pflutter.sdk=$HOME/flutter
+        run: flutter build apk --debug -Pflutter.sdk=${{ steps.flutter-path.outputs.flutter-path }}
         working-directory: flutter
         env:
           ANDROID_HOME: ${{ steps.android-home.outputs.android-home }}
