@@ -5,9 +5,9 @@
 cd android
 
 # Regenerate with flutter create (produces AGP 9 compatible .kts files)
-flutter create --template=app --platform=android --overwrite .
+flutter create --template=app --platform=android --overwrite ..
 
-# Fix readWithUTF8 (removed in Gradle 9) - replace with reader()
+# Fix readWithUTF8 (removed in Gradle 9) - delete the line, replace load call
 find . -name "*.kts" -type f -exec sed -i "/readWithUTF8/d" {} +
 find . -name "*.kts" -type f -exec sed -i "s/localProperties.load(localPropertiesFile)/localProperties.load(localPropertiesFile.reader())/g" {} +
 
