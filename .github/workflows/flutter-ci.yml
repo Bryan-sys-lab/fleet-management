@@ -11,8 +11,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  analyze-test-build:
-    name: Analyze, test, and build Flutter app
+  build:
+    name: Build and test Flutter app
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -32,85 +32,8 @@ jobs:
           channel: stable
           cache: true
 
-      - name: Get Flutter SDK path
-        id: flutter-path
-        run: |
-          echo "flutter-path=$FLUTTER_ROOT" >> $GITHUB_OUTPUT
-          echo "FLUTTER_ROOT=$FLUTTER_ROOT" >> $GITHUB_ENV
-        working-directory: flutter
-
-      - name: Flutter precache Android
-        run: |
-          flutter config --no-analytics
-          flutter --version
-          flutter precache --android
-        working-directory: flutter
-
-      - name: Cache pub-cache
-        uses: actions/cache@v4
-        with:
-          path: ${{ env.HOME }}/.pub-cache
-          key: ${{ runner.os }}-pub-${{ hashFiles('**/pubspec.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-pub-
-
-      - name: Cache Gradle
-        uses: actions/cache@v4
-        with:
-          path: ${{ env.HOME }}/.gradle
-          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle', '**/*.gradle.kts', '**/gradle-wrapper.properties') }}
-          restore-keys: |
-            ${{ runner.os }}-gradle-
-
       - name: Flutter pub get
         run: flutter pub get
-        working-directory: flutter
-        env:
-          ANDROID_HOME: $HOME/Android/Sdk
-
-      - name: Detect Android SDK location
-        id: android-home
-        run: |
-          if [ -n "$ANDROID_HOME" ]; then
-            echo "android-home=$ANDROID_HOME" >> $GITHUB_OUTPUT
-          elif [ -n "$ANDROID_SDK_ROOT" ]; then
-            echo "android-home=$ANDROID_SDK_ROOT" >> $GITHUB_OUTPUT
-          else
-            echo "android-home=$HOME/Android/Sdk" >> $GITHUB_OUTPUT
-          fi
-        shell: bash
-
-      - name: Install Android SDK components
-        run: |
-          ${{ steps.android-home.outputs.android-home }}/cmdline-tools/latest/bin/sdkmanager "platforms;android-34" "build-tools;34.0.0" || true
-        shell: bash
-        env:
-          ANDROID_HOME: ${{ steps.android-home.outputs.android-home }}
-
-      - name: Accept Android SDK licenses
-        run: |
-          echo y | ${{ steps.android-home.outputs.android-home }}/cmdline-tools/latest/bin/sdkmanager --licenses || true
-        shell: bash
-        env:
-          ANDROID_HOME: ${{ steps.android-home.outputs.android-home }}
-
-      - name: Synthesize android/local.properties
-        run: |
-          cat > flutter/android/local.properties <<EOF
-          sdk.dir=${{ steps.android-home.outputs.android-home }}
-          flutter.sdk=${{ steps.flutter-path.outputs.flutter-path }}
-          flutter.buildMode=release
-          EOF
-        shell: bash
-
-      - name: Debug: Find Flutter engine
-        run: |
-          echo "FLUTTER_ROOT=$FLUTTER_ROOT"
-          find "$FLUTTER_ROOT" -name "flutter.jar" -o -name "*.aar" 2>/dev/null | head -10
-          echo "--- engine dir listing ---"
-          ls -la "$FLUTTER_ROOT/bin/cache/artifacts/engine/" 2>/dev/null || echo "no engine dir"
-          echo "--- gradle plugin dir ---"
-          ls -la "$FLUTTER_ROOT/packages/flutter_tools/gradle/" 2>/dev/null || echo "no gradle plugin dir"
         working-directory: flutter
 
       - name: Flutter analyze
@@ -122,11 +45,8 @@ jobs:
         working-directory: flutter
 
       - name: Build Android APK (debug)
-        run: flutter build apk --debug -Pflutter.sdk=${{ steps.flutter-path.outputs.flutter-path }}
+        run: flutter build apk --debug
         working-directory: flutter
-        env:
-          ANDROID_HOME: ${{ steps.android-home.outputs.android-home }}
-          FLUTTER_ROOT: ${{ steps.flutter-path.outputs.flutter-path }}
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
