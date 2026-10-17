@@ -103,6 +103,15 @@ jobs:
           EOF
         shell: bash
 
+      - name: Debug: List Flutter engine artifacts
+        run: |
+          echo "FLUTTER_ROOT=$FLUTTER_ROOT"
+          echo "--- engine artifacts ---"
+          find "$FLUTTER_ROOT/bin/cache/artifacts/engine" -name "*.jar" -o -name "*.aar" 2>/dev/null | head -20
+          echo "--- packages/flutter_tools/gradle ---"
+          ls "$FLUTTER_ROOT/packages/flutter_tools/gradle/" 2>/dev/null || echo "NOT FOUND"
+        working-directory: flutter
+
       - name: Flutter analyze
         run: flutter analyze --fatal-infos
         working-directory: flutter
