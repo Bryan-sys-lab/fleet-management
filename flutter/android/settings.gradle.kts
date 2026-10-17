@@ -6,10 +6,9 @@ pluginManagement {
     }
     val flutterRoot = findProperty("flutter.sdk")?.toString()
         ?: System.getenv("FLUTTER_ROOT")
-        ?: "/opt/hostedtoolcache/flutter/stable-3.47.5-x64/flutter"
+        ?: System.getenv("HOME")?.let { "$it/flutter" }
+        ?: "/opt/flutter"
     includeBuild("$flutterRoot/packages/flutter_tools/gradle")
 }
 
 include(":app")
-EOF
-echo "settings.gradle.kts updated"
