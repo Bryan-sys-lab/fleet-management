@@ -75,6 +75,6 @@ jobs:
           EOF
         shell: bash
 
-      - name: Build Android APK (release)
-        run: flutter build apk --release --verbose
+      - name: Build Android APK (debug)
+        run: flutter build apk --debug --verbose
         working-directory: flutter
