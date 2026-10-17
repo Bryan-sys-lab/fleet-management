@@ -52,6 +52,16 @@ jobs:
         run: echo "flutter-path=$(flutter sdk-path)" >> $GITHUB_OUTPUT
         working-directory: flutter
 
+      - name: Check Flutter gradle plugin directory
+        run: |
+          FLUTTER_PATH=$(flutter sdk-path)
+          echo "Flutter path: $FLUTTER_PATH"
+          echo "--- packages/flutter_tools/gradle/ ---"
+          ls -la "$FLUTTER_PATH/packages/flutter_tools/gradle/" 2>&1 || echo "NOT FOUND"
+          echo "--- packages/flutter_tools/ ---"
+          ls -la "$FLUTTER_PATH/packages/flutter_tools/" 2>&1 | head -20 || echo "NOT FOUND"
+        working-directory: flutter
+
       - name: Detect Android SDK location
         id: android-home
         run: |
