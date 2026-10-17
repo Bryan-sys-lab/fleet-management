@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../app/container.dart';
-import '../../app/shells.dart';
+import '../../app/providers.dart';
 import '../../core/offline/queue_store.dart';
 import '../../design/components/buttons.dart';
 import '../../design/components/card.dart';

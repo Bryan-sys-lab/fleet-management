@@ -44,7 +44,7 @@ class DriverSettingsScreen extends ConsumerWidget {
                 ListTile(
                   title: HelixText(strings.t('profile.language'), style: TypeScale.body(AppColors.text)),
                   trailing: HelixText(
-                    locale.languageCode == 'sw' ? 'Kiswahili' : 'English',
+                    locale == 'sw' ? 'Kiswahili' : 'English',
                     style: TypeScale.bodyStrong(AppColors.accentText),
                   ),
                   onTap: () => ref.read(localeProvider.notifier).toggle(),
