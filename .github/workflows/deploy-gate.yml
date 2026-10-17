@@ -78,9 +78,10 @@ jobs:
           REDIS_URL: redis://localhost:6379/0
           PORT: 4000
           NODE_ENV: development
-          SECURITY_ENFORCE: off
+          SECURITY_ENFORCE: always
           JWT_SECRET: ci-test-secret-do-not-use-in-prod
           MFA_ENCRYPTION_KEY: Y2ktZHVtbXktbWZhLWtleS0zMi1ieXRlLXMhIVhYWFg=
+          WEBHOOK_SECRET: ci-test-webhook-secret-do-not-use-in-prod
         run: |
           ls -la packages/api/dist/server.js
           node packages/api/dist/server.js > /tmp/api.log 2>&1 &
