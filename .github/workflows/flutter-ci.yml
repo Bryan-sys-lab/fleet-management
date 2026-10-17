@@ -43,10 +43,6 @@ jobs:
         run: flutter test
         working-directory: flutter
 
-      - name: Flutter precache Android
-        run: flutter precache --android
-        working-directory: flutter
-
       - name: Detect Android SDK location
         id: android-home
         run: |
@@ -58,6 +54,13 @@ jobs:
             echo "android-home=$HOME/Android/Sdk" >> $GITHUB_OUTPUT
           fi
         shell: bash
+
+      - name: Install Android SDK components
+        run: |
+          ${{ steps.android-home.outputs.android-home }}/cmdline-tools/latest/bin/sdkmanager "platforms;android-34" "build-tools;34.0.0" || true
+        shell: bash
+        env:
+          ANDROID_HOME: ${{ steps.android-home.outputs.android-home }}
 
       - name: Accept Android SDK licenses
         run: |
@@ -76,5 +79,7 @@ jobs:
         shell: bash
 
       - name: Build Android APK (debug)
-        run: flutter build apk --debug --verbose
+        run: flutter build apk --debug
         working-directory: flutter
+        env:
+          ANDROID_HOME: ${{ steps.android-home.outputs.android-home }}
