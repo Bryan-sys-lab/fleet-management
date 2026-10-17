@@ -11,7 +11,7 @@
 
     <application
         android:label="Helix"
-        android:name="${applicationName}"
+        android:name=".MainActivity"
         android:icon="@mipmap/ic_launcher"
         android:usesCleartextTraffic="true">
         <activity
