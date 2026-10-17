@@ -9,7 +9,7 @@ val flutterVersionName = localProperties.getProperty("flutterVersionName") ?: "1
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
-    id("dev.flutter.flutter-gradle-plugin") version "3.47.5"
+    id("dev.flutter.flutter-gradle-plugin")
 }
 
 android {
@@ -53,3 +53,5 @@ dependencies {
 flutter {
     source = "../.."
 }
+EOF
+echo "app/build.gradle.kts updated - removed flutterRoot dependency"
