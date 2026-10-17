@@ -10,4 +10,8 @@ pluginManagement {
     includeBuild "$flutterRoot/packages/flutter_tools/gradle"
 }
 
+plugins {
+    id 'dev.flutter.flutter-plugin-loader'
+}
+
 include ':app'
