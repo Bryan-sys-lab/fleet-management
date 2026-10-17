@@ -1,0 +1,105 @@
+name: 'Setup Flutter Android'
+description: 'Set up JDK 17, Flutter SDK, Android SDK licenses, and local.properties for mobile CI'
+inputs:
+  flutter-channel:
+    description: 'Flutter channel'
+    required: false
+    default: 'stable'
+  flutter-version:
+    description: 'Flutter version'
+    required: false
+    default: '3.47.5'
+  working-directory:
+    description: 'Working directory for flutter commands'
+    required: false
+    default: 'flutter'
+runs:
+  using: composite
+  steps:
+    - name: Set up JDK 17
+      uses: actions/setup-java@v4
+      with:
+        distribution: temurin
+        java-version: '17'
+
+    - name: Set up Flutter SDK
+      uses: subosito/flutter-action@v2
+      with:
+        channel: ${{ inputs.flutter-channel }}
+        flutter-version: ${{ inputs.flutter-version }}
+        cache: true
+
+    - name: Add Flutter to PATH
+      run: echo "${HOME}/flutter/bin" >> $GITHUB_PATH
+      shell: bash
+
+    - name: Detect Android home
+      id: android-home
+      run: |
+        if [ -n "$ANDROID_HOME" ]; then
+          echo "android-home=$ANDROID_HOME" >> $GITHUB_OUTPUT
+        elif [ -n "$ANDROID_SDK_ROOT" ]; then
+          echo "android-home=$ANDROID_SDK_ROOT" >> $GITHUB_OUTPUT
+        else
+          echo "android-home=$HOME/Android/Sdk" >> $GITHUB_OUTPUT
+        fi
+      shell: bash
+
+    - name: Configure Flutter
+      run: |
+        flutter config --no-analytics
+        flutter --version
+        flutter precache --android
+      working-directory: ${{ inputs.working-directory }}
+      shell: bash
+      env:
+        ANDROID_HOME: ${{ steps.android-home.outputs.android-home }}
+
+    - name: Cache pub-cache
+      uses: actions/cache@v4
+      with:
+        path: ${{ env.HOME }}/.pub-cache
+        key: ${{ runner.os }}-pub-${{ hashFiles('**/pubspec.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-pub-
+
+    - name: Cache Gradle
+      uses: actions/cache@v4
+      with:
+        path: ${{ env.HOME }}/.gradle
+        key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle.kts', '**/*.gradle', '**/gradle-wrapper.properties') }}
+        restore-keys: |
+          ${{ runner.os }}-gradle-
+
+    - name: Flutter pub get
+      run: flutter pub get
+      working-directory: ${{ inputs.working-directory }}
+      shell: bash
+      env:
+        ANDROID_HOME: ${{ steps.android-home.outputs.android-home }}
+
+    - name: Accept Android SDK licenses
+      run: |
+        echo y | ${{ steps.android-home.outputs.android-home }}/cmdline-tools/latest/bin/sdkmanager --licenses || true
+      shell: bash
+      env:
+        ANDROID_HOME: ${{ steps.android-home.outputs.android-home }}
+
+    - name: Free disk space
+      run: |
+        ${{ steps.android-home.outputs.android-home }}/cmdline-tools/latest/bin/sdkmanager --list_installed 2>/dev/null | grep -E 'ndk|platforms;|build-tools;' | while read -r line; do
+          pkg=$(echo "$line" | awk '{print $1}')
+          ${{ steps.android-home.outputs.android-home }}/cmdline-tools/latest/bin/sdkmanager --uninstall "$pkg" >/dev/null 2>&1 || true
+        done
+      shell: bash
+      env:
+        ANDROID_HOME: ${{ steps.android-home.outputs.android-home }}
+
+    - name: Synthesize android/local.properties
+      run: |
+        cat > ${{ inputs.working-directory }}/android/local.properties <<EOF
+        sdk.dir=${{ steps.android-home.outputs.android-home }}
+        flutter.sdk=${HOME}/flutter
+        flutter.buildMode=release
+        EOF
+      shell: bash

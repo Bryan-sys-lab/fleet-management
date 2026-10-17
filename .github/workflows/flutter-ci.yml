@@ -20,32 +20,52 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Set up Flutter
-        uses: subosito/flutter-action@v2
+      - name: Setup Flutter Android
+        uses: ./.github/actions/setup-flutter-android
         with:
-          channel: stable
+          flutter-channel: stable
           flutter-version: 3.47.5
+          working-directory: flutter
 
-      - name: Set up Java 17 (Android AGP requirement)
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: '17'
-
-      - name: Install dependencies
-        run: flutter pub get
+      - name: Flutter pub upgrade (dry-run)
+        run: flutter pub upgrade --dry-run
         working-directory: flutter
 
       - name: Flutter analyze
-        run: flutter analyze
+        run: flutter analyze --fatal-infos
         working-directory: flutter
 
       - name: Flutter test
-        run: flutter test
+        run: flutter test --reporter expanded
         working-directory: flutter
 
       - name: Build Android APK (release)
-        run: flutter build apk --release -Pflutter.sdk=$FLUTTER_ROOT
+        if: secrets.ANDROID_KEYSTORE_BASE64 != ''
+        run: |
+          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > /tmp/keystore.jks
+          cat > android/key.properties <<EOF
+          keyAlias=upload
+          keyPassword=${{ secrets.KEYSTORE_PASSWORD }}
+          storeFile=/tmp/keystore.jks
+          storePassword=${{ secrets.KEYSTORE_PASSWORD }}
+          EOF
+          keytool -list -v -keystore /tmp/keystore.jks -alias upload -storepass "${{ secrets.KEYSTORE_PASSWORD }}"
+          flutter build apk --release
+        working-directory: flutter
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+
+      - name: Build Android APK (release, debug signing)
+        if: secrets.ANDROID_KEYSTORE_BASE64 == ''
+        run: flutter build apk --release
+        working-directory: flutter
+
+      - name: Scrub signing material
+        if: always()
+        run: |
+          rm -f /tmp/keystore.jks
+          rm -f android/key.properties
         working-directory: flutter
 
       - name: Upload APK artifact

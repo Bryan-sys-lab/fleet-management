@@ -6,6 +6,12 @@ if (localPropertiesFile.exists()) {
 val flutterVersionCode = (localProperties.getProperty("flutterVersionCode") ?: "1").toInt()
 val flutterVersionName = localProperties.getProperty("flutterVersionName") ?: "1.0.0"
 
+val keyProperties = Properties()
+val keyPropertiesFile = rootProject.file("key.properties")
+if (keyPropertiesFile.exists()) {
+    keyPropertiesFile.inputStream().use { keyProperties.load(it) }
+}
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
@@ -35,9 +41,24 @@ android {
         versionCode = flutterVersionCode
         versionName = flutterVersionName
     }
+    signingConfigs {
+        create("release") {
+            if (keyProperties.containsKey("storeFile")) {
+                storeFile = file(keyProperties["storeFile"] ?: "")
+                storePassword = keyProperties["storePassword"] ?: ""
+                keyAlias = keyProperties["keyAlias"] ?: ""
+                keyPassword = keyProperties["keyPassword"] ?: ""
+            } else {
+                storeFile = file("debug.keystore")
+                storePassword = "android"
+                keyAlias = "androiddebugkey"
+                keyPassword = "android"
+            }
+        }
+    }
     buildTypes {
         release {
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.getByName("release")
         }
     }
 }
@@ -53,5 +74,3 @@ dependencies {
 flutter {
     source = "../.."
 }
-EOF
-echo "app/build.gradle.kts updated - removed flutterRoot dependency"
