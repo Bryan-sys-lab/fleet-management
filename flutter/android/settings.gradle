@@ -4,11 +4,10 @@ pluginManagement {
         google()
         mavenCentral()
     }
+    def flutterRoot = System.getenv('FLUTTER_ROOT')
+            ?: System.getenv('HOME') + '/flutter'
+            ?: '/opt/flutter'
+    includeBuild "$flutterRoot/packages/flutter_tools/gradle"
 }
 
 include ':app'
-
-def flutterRoot = System.getenv('FLUTTER_ROOT')
-        ?: System.getenv('HOME') + '/flutter'
-        ?: '/opt/flutter'
-apply from: "$flutterRoot/packages/flutter_tools/gradle/flutter_loader.gradle"
