@@ -31,6 +31,6 @@ jobs:
         with:
           channel: stable
 
-      - name: Flutter doctor
-        run: flutter doctor -v
+      - name: Flutter pub get
+        run: flutter pub get
         working-directory: flutter
