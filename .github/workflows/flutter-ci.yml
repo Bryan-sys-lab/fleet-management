@@ -109,7 +109,7 @@ jobs:
         working-directory: flutter
 
       - name: Build Android APK (debug)
-        run: flutter build apk --debug
+        run: flutter build apk --debug -Pflutter.sdk=$HOME/flutter
         working-directory: flutter
         env:
           ANDROID_HOME: ${{ steps.android-home.outputs.android-home }}
