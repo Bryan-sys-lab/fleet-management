@@ -51,14 +51,7 @@ jobs:
       - name: Replace build.gradle.kts with working Groovy build.gradle
         run: |
           rm -f android/build.gradle.kts
-          cat > android/build.gradle << 'EOF'
-allprojects {
-    repositories {
-        google()
-        mavenCentral()
-    }
-}
-EOF
+          printf 'allprojects {\n    repositories {\n        google()\n        mavenCentral()\n    }\n}\n' > android/build.gradle
         working-directory: flutter
 
       - name: Build Android APK (release)
