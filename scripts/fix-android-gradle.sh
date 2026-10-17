@@ -36,6 +36,12 @@ EOF
 
 # Replace app-level build.gradle with working Groovy using Flutter Gradle Plugin
 cat > app/build.gradle << 'GRADLE_EOF'
+plugins {
+    id 'com.android.application'
+    id 'org.jetbrains.kotlin.android'
+    id 'dev.flutter.flutter-gradle-plugin'
+}
+
 def localProperties = new Properties()
 def localPropertiesFile = rootProject.file('local.properties')
 if (localPropertiesFile.exists()) {
@@ -49,12 +55,6 @@ if (flutterRoot == null) {
 }
 def flutterVersionCode = localProperties.getProperty('flutterVersionCode') ?: '1'
 def flutterVersionName = localProperties.getProperty('flutterVersionName') ?: '1.0.0'
-
-plugins {
-    id 'com.android.application'
-    id 'org.jetbrains.kotlin.android'
-    id 'dev.flutter.flutter-gradle-plugin'
-}
 
 android {
     namespace = "com.helix.helix"
