@@ -23,7 +23,7 @@ plugins {
 
 android {
     namespace = "com.helix.helix"
-    compileSdk = 34
+    compileSdk = 37
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_1_8
