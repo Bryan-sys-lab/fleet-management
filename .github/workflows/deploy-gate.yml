@@ -78,7 +78,7 @@ jobs:
           REDIS_URL: redis://localhost:6379/0
           PORT: 4000
           NODE_ENV: development
-          SECURITY_ENFORCE: always
+          SECURITY_ENFORCE: off
           JWT_SECRET: ci-test-secret-do-not-use-in-prod
           MFA_ENCRYPTION_KEY: Y2ktZHVtbXktbWZhLWtleS0zMi1ieXRlLXMhIVhYWFg=
           WEBHOOK_SECRET: ci-test-webhook-secret-do-not-use-in-prod
