@@ -5,10 +5,6 @@ inputs:
     description: 'Flutter channel'
     required: false
     default: 'stable'
-  flutter-version:
-    description: 'Flutter version'
-    required: false
-    default: '3.47.5'
   working-directory:
     description: 'Working directory for flutter commands'
     required: false
@@ -26,7 +22,6 @@ runs:
       uses: subosito/flutter-action@v2
       with:
         channel: ${{ inputs.flutter-channel }}
-        flutter-version: ${{ inputs.flutter-version }}
         cache: true
 
     - name: Add Flutter to PATH
