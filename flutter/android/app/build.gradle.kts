@@ -1,7 +1,10 @@
+import java.util.Properties
+import java.io.File
+
 val localProperties = Properties()
 val localPropertiesFile = rootProject.file("local.properties")
 if (localPropertiesFile.exists()) {
-    localPropertiesFile.inputStream().use { localProperties.load(it) }
+    localPropertiesFile.inputStream().use { is -> localProperties.load(is) }
 }
 val flutterVersionCode = (localProperties.getProperty("flutterVersionCode") ?: "1").toInt()
 val flutterVersionName = localProperties.getProperty("flutterVersionName") ?: "1.0.0"
@@ -9,7 +12,7 @@ val flutterVersionName = localProperties.getProperty("flutterVersionName") ?: "1
 val keyProperties = Properties()
 val keyPropertiesFile = rootProject.file("key.properties")
 if (keyPropertiesFile.exists()) {
-    keyPropertiesFile.inputStream().use { keyProperties.load(it) }
+    keyPropertiesFile.inputStream().use { is -> keyProperties.load(is) }
 }
 
 plugins {
@@ -26,6 +29,7 @@ android {
         sourceCompatibility = JavaVersion.VERSION_1_8
         targetCompatibility = JavaVersion.VERSION_1_8
     }
+
     kotlinOptions {
         jvmTarget = "1.8"
     }
@@ -44,10 +48,10 @@ android {
     signingConfigs {
         create("release") {
             if (keyProperties.containsKey("storeFile")) {
-                storeFile = file(keyProperties["storeFile"] ?: "")
-                storePassword = keyProperties["storePassword"] ?: ""
-                keyAlias = keyProperties["keyAlias"] ?: ""
-                keyPassword = keyProperties["keyPassword"] ?: ""
+                storeFile = file(keyProperties.getProperty("storeFile") ?: "")
+                storePassword = keyProperties.getProperty("storePassword") ?: ""
+                keyAlias = keyProperties.getProperty("keyAlias") ?: ""
+                keyPassword = keyProperties.getProperty("keyPassword") ?: ""
             } else {
                 storeFile = file("debug.keystore")
                 storePassword = "android"
