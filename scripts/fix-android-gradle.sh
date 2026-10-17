@@ -4,8 +4,10 @@
 # which was removed in Gradle 9.x. Replace with reader().
 cd android
 
-# Regenerate with flutter create (produces AGP 9 compatible .kts files)
-flutter create --template=app --platform=android --overwrite ..
+# Go to flutter project root, regenerate Android skeleton
+cd ..
+flutter create --template=app --platform=android --overwrite .
+cd android
 
 # Fix readWithUTF8 (removed in Gradle 9) - delete the line, replace load call
 find . -name "*.kts" -type f -exec sed -i "/readWithUTF8/d" {} +
