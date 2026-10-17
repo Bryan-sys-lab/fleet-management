@@ -56,62 +56,8 @@ jobs:
         run: flutter pub get
         working-directory: flutter
 
-      - name: Replace Kotlin DSL build.gradle.kts with Groovy build.gradle
-        run: |
-          rm -f android/build.gradle.kts android/settings.gradle.kts
-          printf 'buildscript {\n    repositories {\n        google()\n        mavenCentral()\n    }\n    dependencies {\n        classpath "com.android.tools.build:gradle:8.2.0"\n        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:2.0.0"\n    }\n}\n\nallprojects {\n    repositories {\n        google()\n        mavenCentral()\n    }\n}\n' > android/build.gradle
-          printf 'include ":app"\n' > android/settings.gradle
-          cat > android/app/build.gradle << 'GRADLE_EOF'
-def localProperties = new Properties()
-def localPropertiesFile = rootProject.file('local.properties')
-if (localPropertiesFile.exists()) {
-    localPropertiesFile.withReader('UTF-8') { reader ->
-        localProperties.load(reader)
-    }
-}
-def flutterRoot = localProperties.getProperty('flutter.sdk')
-if (flutterRoot == null) {
-    throw new GradleException("Flutter SDK not found. Define location with flutter.sdk in the local.properties file.")
-}
-def flutterVersionCode = localProperties.getProperty('flutterVersionCode') ?: '1'
-def flutterVersionName = localProperties.getProperty('flutterVersionName') ?: '1.0.0'
-
-plugins {
-    id 'com.android.application'
-    id 'org.jetbrains.kotlin.android'
-    id 'dev.flutter.flutter-gradle-plugin'
-}
-
-android {
-    namespace = "com.helix.helix"
-    compileSdkVersion 34
-    compileOptions {
-        sourceCompatibility JavaVersion.VERSION_1_8
-        targetCompatibility JavaVersion.VERSION_1_8
-    }
-    sourceSets { main.java.srcDirs += 'src/main/kotlin' }
-    defaultConfig {
-        applicationId "com.helix.helix"
-        minSdkVersion 21
-        targetSdkVersion 34
-        versionCode flutterVersionCode.toInteger()
-        versionName flutterVersionName
-    }
-    buildTypes { release { signingConfig signingConfigs.debug } }
-}
-
-dependencies {
-    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:2.0.0"
-    implementation "androidx.core:core-ktx:+"
-    implementation "androidx.annotation:annotation:+"
-    implementation "androidx.lifecycle:lifecycle-runtime-ktx:+"
-    implementation "androidx.activity:activity:+"
-}
-
-flutter {
-    source '../..'
-}
-GRADLE_EOF
+      - name: Fix Gradle files (readWithUTF8 not available in Gradle's Groovy)
+        run: bash ../scripts/fix-android-gradle.sh
         working-directory: flutter
 
       - name: Build Android APK (release)
