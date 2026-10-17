@@ -32,9 +32,10 @@ jobs:
           channel: stable
           cache: true
 
-      - name: Add Flutter to PATH
-        run: echo "$HOME/flutter/bin" >> $GITHUB_PATH
-        shell: bash
+      - name: Get Flutter SDK path
+        id: flutter-path
+        run: echo "flutter-path=$(flutter sdk-path)" >> $GITHUB_OUTPUT
+        working-directory: flutter
 
       - name: Flutter precache Android
         run: |
@@ -95,7 +96,7 @@ jobs:
         run: |
           cat > flutter/android/local.properties <<EOF
           sdk.dir=${{ steps.android-home.outputs.android-home }}
-          flutter.sdk=$HOME/flutter
+          flutter.sdk=${{ steps.flutter-path.outputs.flutter-path }}
           flutter.buildMode=release
           EOF
         shell: bash
@@ -109,11 +110,11 @@ jobs:
         working-directory: flutter
 
       - name: Build Android APK (debug)
-        run: flutter build apk --debug -Pflutter.sdk=$HOME/flutter
+        run: flutter build apk --debug -Pflutter.sdk=${{ steps.flutter-path.outputs.flutter-path }}
         working-directory: flutter
         env:
           ANDROID_HOME: ${{ steps.android-home.outputs.android-home }}
-          FLUTTER_ROOT: $HOME/flutter
+          FLUTTER_ROOT: ${{ steps.flutter-path.outputs.flutter-path }}
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
