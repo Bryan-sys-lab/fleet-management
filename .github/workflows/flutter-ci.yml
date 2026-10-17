@@ -48,10 +48,11 @@ jobs:
         run: flutter create --template=app --platform=android --overwrite .
         working-directory: flutter
 
-      - name: Replace build.gradle.kts with working Groovy build.gradle
+      - name: Fix Gradle files (readWithUTF8 not available in Gradle's Groovy)
         run: |
           rm -f android/build.gradle.kts
           printf 'allprojects {\n    repositories {\n        google()\n        mavenCentral()\n    }\n}\n' > android/build.gradle
+          sed -i "s/readWithUTF8('UTF-8')/getText('UTF-8')/g" android/app/build.gradle
         working-directory: flutter
 
       - name: Build Android APK (release)
