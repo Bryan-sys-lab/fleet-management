@@ -43,6 +43,10 @@ jobs:
         run: flutter test
         working-directory: flutter
 
+      - name: Flutter precache Android
+        run: flutter precache --android
+        working-directory: flutter
+
       - name: Detect Android SDK location
         id: android-home
         run: |
@@ -72,5 +76,5 @@ jobs:
         shell: bash
 
       - name: Build Android APK (release)
-        run: flutter build apk --release
+        run: flutter build apk --release --verbose
         working-directory: flutter
