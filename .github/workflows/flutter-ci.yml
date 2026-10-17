@@ -34,3 +34,7 @@ jobs:
       - name: Flutter pub get
         run: flutter pub get
         working-directory: flutter
+
+      - name: Flutter analyze
+        run: flutter analyze
+        working-directory: flutter
