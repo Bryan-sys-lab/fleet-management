@@ -4,7 +4,7 @@ import java.io.File
 val localProperties = Properties()
 val localPropertiesFile = rootProject.file("local.properties")
 if (localPropertiesFile.exists()) {
-    localPropertiesFile.inputStream().use { is -> localProperties.load(is) }
+    localPropertiesFile.inputStream().use { localProperties.load(it) }
 }
 val flutterVersionCode = (localProperties.getProperty("flutterVersionCode") ?: "1").toInt()
 val flutterVersionName = localProperties.getProperty("flutterVersionName") ?: "1.0.0"
@@ -12,7 +12,7 @@ val flutterVersionName = localProperties.getProperty("flutterVersionName") ?: "1
 val keyProperties = Properties()
 val keyPropertiesFile = rootProject.file("key.properties")
 if (keyPropertiesFile.exists()) {
-    keyPropertiesFile.inputStream().use { is -> keyProperties.load(is) }
+    keyPropertiesFile.inputStream().use { keyProperties.load(it) }
 }
 
 plugins {
