@@ -71,6 +71,19 @@ dependencies {
     implementation 'androidx.annotation:annotation:1.7.1'
     implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.8.2'
     implementation 'androidx.activity:activity:1.9.0'
+
+    // Flutter engine library
+    def flutterRoot = System.getenv('FLUTTER_ROOT') ?: '/opt/flutter'
+    def engineDir = new File("$flutterRoot/bin/cache/artifacts/engine")
+    if (engineDir.exists()) {
+        engineDir.eachDir { archDir ->
+            archDir.eachFile { f ->
+                if (f.name == 'flutter.jar') {
+                    implementation f
+                }
+            }
+        }
+    }
 }
 
 flutter {
