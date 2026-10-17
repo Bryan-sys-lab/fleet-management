@@ -48,8 +48,27 @@ jobs:
         run: flutter create --template=app --platform=android --overwrite .
         working-directory: flutter
 
-      - name: Fix build.gradle.kts Groovy-in-Kotlin syntax
-        run: sed -i "s/localPropertiesFile.readWithUTF8('UTF-8')/localPropertiesFile.readText(Charsets.UTF_8)/" android/build.gradle.kts
+      - name: Fix project-level build.gradle.kts (Kotlin DSL)
+        run: |
+          cat > android/build.gradle.kts << 'KOTLIN_EOF'
+allprojects {
+    repositories {
+        google()
+        mavenCentral()
+    }
+}
+val newBuildDir: Directory =
+    rootProject.layout.buildDirectory.dir("../../build").get()
+rootProject.layout.buildDirectory.value(newBuildDir)
+subprojects {
+    val newSubprojectBuildDir = newBuildDir.dir(project.name)
+    project.layout.buildDirectory.value(newSubprojectBuildDir)
+}
+subprojects { project.evaluationDependsOn(":app") }
+tasks.register<Delete>("clean") {
+    delete(rootProject.layout.buildDirectory)
+}
+KOTLIN_EOF
         working-directory: flutter
 
       - name: Build Android APK (release)
