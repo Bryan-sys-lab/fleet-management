@@ -71,13 +71,6 @@ dependencies {
     implementation 'androidx.annotation:annotation:1.7.1'
     implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.8.2'
     implementation 'androidx.activity:activity:1.9.0'
-
-    // Flutter engine library (single arch to avoid duplicate dex classes)
-    def flutterRoot = System.getenv('FLUTTER_ROOT') ?: '/opt/flutter'
-    def flutterJar = new File("$flutterRoot/bin/cache/artifacts/engine/android-arm64/flutter.jar")
-    if (flutterJar.exists()) {
-        implementation files(flutterJar)
-    }
 }
 
 flutter {
